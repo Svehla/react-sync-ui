@@ -3,9 +3,9 @@ import "react-app-polyfill/ie11";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { Button } from "reactstrap";
-import { RegisterSyncUI, syncUIFactory } from "../dist";
+import { SyncUI, syncUIFactory } from "../dist";
 import { syncAlert } from "./syncComponents/SyncAlert";
-import { syncBarcodeScan } from "./syncComponents/SyncBarcodeScan";
+// import { syncBarcodeScan } from "./syncComponents/SyncBarcodeScan";
 import { syncConfirm } from "./syncComponents/SyncConfirm";
 import { syncPrompt } from "./syncComponents/SyncPrompt";
 
@@ -32,10 +32,11 @@ const delay = (time: number) => new Promise(res => setTimeout(res, time));
 const App = () => {
   const startHacking = async () => {
     try {
-      const userName = await syncBarcodeScan({
-        title: "Please, upload your user name",
-        canUserReject: true
-      });
+      const userName = "xxx";
+      // await syncBarcodeScan({
+      //   title: "Please, upload your user name",
+      //   canUserReject: true
+      // });
 
       const shouldContinue = await syncConfirm({
         title: `Hi ${userName}!`,
@@ -69,8 +70,8 @@ const App = () => {
 
   return (
     <>
-      <RegisterSyncUI />
-      <secondInstance.RegisterSyncUI />
+      <SyncUI />
+      <secondInstance.SyncUI />
 
       <Button onClick={startHacking} color="primary" variant={"contained"}>
         Start Hacking

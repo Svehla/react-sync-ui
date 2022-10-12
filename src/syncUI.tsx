@@ -78,17 +78,17 @@ type QueueItem<Data, ResolveValue> = {
 export const syncUIFactory = () => {
   const mutSyncUIComponentsRenderQueue = [] as React.FC<QueueItem<any, any>>[];
 
-  const ThrowIfMoreInstances = getSingletonCompCheck("You have to init <RegisterSyncUI /> just one time");
+  const ThrowIfMoreInstances = getSingletonCompCheck("You have to init <SyncUI /> just one time");
 
   return {
     makeSyncUI: <ArgData, ResolveValue = void>(
-      SyncUserComp: React.FC<{
+      SyncUIUserComp: React.FC<{
         data: ArgData;
         resolve: (value: ResolveValue) => void;
         reject: (reason?: any) => void;
       }>
     ) => {
-      const _debugName = SyncUserComp.displayName ?? SyncUserComp.name ?? "uniqSymbolMessageType";
+      const _debugName = SyncUIUserComp.displayName ?? SyncUIUserComp.name ?? "uniqSymbolMessageType";
 
       const syncUIComponentType = Symbol(_debugName);
 
@@ -106,17 +106,17 @@ export const syncUIFactory = () => {
         if (!props.head) return null;
         if (props.head.type !== syncUIComponentType) return null;
 
-        return <SyncUserComp data={props.head.data} resolve={props.head.resolve} reject={props.head.reject} />;
+        return <SyncUIUserComp data={props.head.data} resolve={props.head.resolve} reject={props.head.reject} />;
       };
 
       mutSyncUIComponentsRenderQueue.push(SyncUISingletonComp);
 
       return (input: ArgData) => {
-        if (!singletonSyncUIRef.registerToQueue) throw new Error(`You have to initialize <RegisterSyncUI />`);
+        if (!singletonSyncUIRef.registerToQueue) throw new Error(`You have to initialize <SyncUI />`);
         return singletonSyncUIRef.registerToQueue(syncUIComponentType, input);
       };
     },
-    RegisterSyncUI: () => {
+    SyncUI: () => {
       const queue = useAsyncQueue();
       return (
         <>

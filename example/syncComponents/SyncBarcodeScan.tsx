@@ -14,7 +14,7 @@ export const syncBarcodeScan = makeSyncUI<
   const [input, setInput] = React.useState("");
 
   return (
-    <Modal isOpen={true} onExit={props.data.canUserReject ? () => props.reject(new Error("scanner-ended")) : undefined}>
+    <Modal isOpen={true} toggle={props.data.canUserReject ? () => props.reject(new Error("scanner-ended")) : undefined}>
       <ModalHeader>{props.data.title}</ModalHeader>
 
       <ModalBody>

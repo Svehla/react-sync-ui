@@ -4,7 +4,7 @@ import { makeSyncUI } from "../../dist";
 
 export const syncAlert = makeSyncUI<string, void>(function SyncAlert(props) {
   return (
-    <Modal isOpen={true} onClose={() => props.resolve()}>
+    <Modal isOpen={true} toggle={() => props.resolve()}>
       <ModalHeader>{props.data}</ModalHeader>
       <ModalFooter>
         <Button autoFocus onClick={() => props.resolve()} color="primary" variant={"contained"}>

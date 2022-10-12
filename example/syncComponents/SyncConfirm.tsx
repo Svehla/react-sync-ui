@@ -11,7 +11,7 @@ export const syncConfirm = makeSyncUI<
   },
   boolean
 >(props => (
-  <Modal isOpen={true} onClose={() => props.resolve(false)}>
+  <Modal isOpen={true} toggle={() => props.resolve(false)}>
     <ModalHeader>{props.data.title}</ModalHeader>
 
     {props.data.description && <ModalBody>{props.data.description}</ModalBody>}

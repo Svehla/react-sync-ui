@@ -17,7 +17,7 @@ export const syncPrompt = makeSyncUI<
   return (
     <Modal
       isOpen={true}
-      onClose={() => {
+      toggle={() => {
         if (!props.data.canUserReject) return;
         props.reject(new Error("User forced close prompt modal"));
       }}

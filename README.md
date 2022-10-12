@@ -36,10 +36,10 @@ npm i react-sync-ui
 import { SyncUI } from 'react-sync-ui'
 
 const App = () => (
-	<>
-		<SyncUI />
-		<YourAppStuffs />
-	<>
+  <>
+    <SyncUI />
+    <YourAppStuffs />
+  <>
 )
 
 ReactDOM.render(<App />, document.getElementById("root"));
@@ -59,12 +59,12 @@ import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { SyncUI } from "react-sync-ui";
 
 export const syncAlert = makeSyncUI<string, void>((props) => (
-	<Modal isOpen={true} toggle={() => props.resolve()}>
-		<ModalHeader>{props.data}</ModalHeader>
-		<ModalFooter>
-			<Button onClick={() => props.resolve()}>OK</Button>
-		</ModalFooter>
-	</Modal>
+  <Modal isOpen={true} toggle={() => props.resolve()}>
+    <ModalHeader>{props.data}</ModalHeader>
+    <ModalFooter>
+      <Button onClick={() => props.resolve()}>OK</Button>
+    </ModalFooter>
+  </Modal>
 );
 
 

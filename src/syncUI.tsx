@@ -90,22 +90,21 @@ export const syncUIFactory = () => {
     ) => {
       const _debugName = SyncUserComp.displayName ?? SyncUserComp.name ?? "uniqSymbolMessageType";
 
-      const syncUIType = Symbol(_debugName);
+      const syncUIComponentType = Symbol(_debugName);
 
-      // object with the current has to be there to change returned mutable reference object while the function is already called
+      // object with the registerToQueue key has to be there to change returned mutable reference object while the function is already called
       const singletonSyncUIRef = {
-        current: undefined as undefined | QueueItem<ArgData, ResolveValue>["registerToQueue"]
+        registerToQueue: undefined as undefined | QueueItem<ArgData, ResolveValue>["registerToQueue"]
       };
 
       const SyncUISingletonComp = (props: QueueItem<ArgData, ResolveValue>) => {
         useComponentDidMount(() => {
-          singletonSyncUIRef.current = props.registerToQueue;
-          return () => (singletonSyncUIRef.current = undefined);
+          singletonSyncUIRef.registerToQueue = props.registerToQueue;
+          return () => (singletonSyncUIRef.registerToQueue = undefined);
         });
 
-        // filter out sync ui component which should not be triggered by current item in the queue
         if (!props.head) return null;
-        if (props.head.type !== syncUIType) return null;
+        if (props.head.type !== syncUIComponentType) return null;
 
         return <SyncUserComp data={props.head.data} resolve={props.head.resolve} reject={props.head.reject} />;
       };
@@ -113,11 +112,10 @@ export const syncUIFactory = () => {
       mutSyncUIComponentsRenderQueue.push(SyncUISingletonComp);
 
       return (input: ArgData) => {
-        if (!singletonSyncUIRef.current) throw new Error(`You have to initialize <RegisterSyncUI />`);
-        return singletonSyncUIRef.current(syncUIType, input);
+        if (!singletonSyncUIRef.registerToQueue) throw new Error(`You have to initialize <RegisterSyncUI />`);
+        return singletonSyncUIRef.registerToQueue(syncUIComponentType, input);
       };
     },
-    // what about SyncUIWrapper?
     RegisterSyncUI: () => {
       const queue = useAsyncQueue();
       return (

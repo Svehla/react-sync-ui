@@ -47,9 +47,7 @@ export const syncPrompt = makeSyncUI<
         </ModalBody>
 
         <ModalFooter>
-          <Button type="submit" color="primary" variant={"contained"}>
-            Accept
-          </Button>
+          <Button type="submit">Accept</Button>
         </ModalFooter>
       </form>
     </Modal>

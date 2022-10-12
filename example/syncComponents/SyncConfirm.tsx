@@ -17,12 +17,8 @@ export const syncConfirm = makeSyncUI<
     {props.data.description && <ModalBody>{props.data.description}</ModalBody>}
 
     <ModalFooter>
-      <Button autoFocus onClick={() => props.resolve(true)} color="primary" variant={"contained"}>
-        {props.data.okBtn ?? "Yes"}
-      </Button>
-      <Button onClick={() => props.resolve(false)} color="primary" variant={"outlined"}>
-        {props.data.notOkBtn ?? "No"}
-      </Button>
+      <Button onClick={() => props.resolve(true)}>{props.data.okBtn ?? "Yes"}</Button>
+      <Button onClick={() => props.resolve(false)}>{props.data.notOkBtn ?? "No"}</Button>
     </ModalFooter>
   </Modal>
 ));

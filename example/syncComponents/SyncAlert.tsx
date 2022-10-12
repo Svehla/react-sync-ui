@@ -7,9 +7,7 @@ export const syncAlert = makeSyncUI<string, void>(function SyncAlert(props) {
     <Modal isOpen={true} toggle={() => props.resolve()}>
       <ModalHeader>{props.data}</ModalHeader>
       <ModalFooter>
-        <Button autoFocus onClick={() => props.resolve()} color="primary" variant={"contained"}>
-          OK
-        </Button>
+        <Button onClick={() => props.resolve()}>OK</Button>
       </ModalFooter>
     </Modal>
   );

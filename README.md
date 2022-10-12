@@ -83,7 +83,7 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
 #### Prompt example
 
 ```tsx
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
+import { Button, Modal, ModalBody, ModalFooter } from "reactstrap";
 import { makeSyncUI } from "react-sync-ui";
 
 export const syncPrompt = makeSyncUI<string, string>((props) => {
@@ -101,8 +101,6 @@ export const syncPrompt = makeSyncUI<string, string>((props) => {
           props.resolve(input);
         }}
       >
-        <ModalHeader>{props.data.title}</ModalHeader>
-
         <ModalBody>
           <label>
             {props.data}

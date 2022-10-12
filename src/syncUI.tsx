@@ -29,7 +29,9 @@ export const useAsyncQueue = <Data, ResolveValue = void>() => {
   );
 
   const registerToQueue = useCallback((type: Symbol, data: Data) => {
-    return new Promise<ResolveValue>((resolve, reject) => setAsyncQueue(p => [...p, { type, data, resolve, reject }]));
+    return new Promise<ResolveValue>((resolve, reject) =>
+      setAsyncQueue(p => [...p, { type, data, resolve, reject }])
+    );
   }, []);
 
   const resolveHeadItem = useCallback((value: ResolveValue) => {
@@ -78,7 +80,9 @@ type QueueItem<Data, ResolveValue> = {
 export const syncUIFactory = () => {
   const mutSyncUIComponentsRenderQueue = [] as React.FC<QueueItem<any, any>>[];
 
-  const ThrowIfMoreInstances = getSingletonCompCheck("You have to init <SyncUI /> just one time");
+  const ThrowIfMoreInstances = getSingletonCompCheck(
+    "You have to init <SyncUI /> just one time"
+  );
 
   return {
     makeSyncUI: <ArgData, ResolveValue = void>(
@@ -88,13 +92,18 @@ export const syncUIFactory = () => {
         reject: (reason?: any) => void;
       }>
     ) => {
-      const _debugName = SyncUIUserComp.displayName ?? SyncUIUserComp.name ?? "uniqSymbolMessageType";
+      const _debugName =
+        SyncUIUserComp.displayName ??
+        SyncUIUserComp.name ??
+        "uniqSymbolMessageType";
 
       const syncUIComponentType = Symbol(_debugName);
 
       // object with the registerToQueue key has to be there to change returned mutable reference object while the function is already called
       const singletonSyncUIRef = {
-        registerToQueue: undefined as undefined | QueueItem<ArgData, ResolveValue>["registerToQueue"]
+        registerToQueue: undefined as
+          | undefined
+          | QueueItem<ArgData, ResolveValue>["registerToQueue"]
       };
 
       const SyncUISingletonComp = (props: QueueItem<ArgData, ResolveValue>) => {
@@ -106,13 +115,20 @@ export const syncUIFactory = () => {
         if (!props.head) return null;
         if (props.head.type !== syncUIComponentType) return null;
 
-        return <SyncUIUserComp data={props.head.data} resolve={props.head.resolve} reject={props.head.reject} />;
+        return (
+          <SyncUIUserComp
+            data={props.head.data}
+            resolve={props.head.resolve}
+            reject={props.head.reject}
+          />
+        );
       };
 
       mutSyncUIComponentsRenderQueue.push(SyncUISingletonComp);
 
       return (input: ArgData) => {
-        if (!singletonSyncUIRef.registerToQueue) throw new Error(`You have to initialize <SyncUI />`);
+        if (!singletonSyncUIRef.registerToQueue)
+          throw new Error(`You have to initialize <SyncUI />`);
         return singletonSyncUIRef.registerToQueue(syncUIComponentType, input);
       };
     },

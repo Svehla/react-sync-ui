@@ -16,7 +16,7 @@ const getSingletonCompCheck = (errorMsg: string) => {
   };
 };
 
-// TODO: add docs + add tests
+// should the word "Async" be there? is that relevant or redundant?
 export const useAsyncQueue = <Data, ResolveValue = void>() => {
   const [asyncQueue, setAsyncQueue] = useState(
     [] as {
@@ -99,7 +99,7 @@ export const syncUIFactory = () => {
 
       const syncUIComponentType = Symbol(_debugName);
 
-      // object with the registerToQueue key has to be there to change returned mutable reference object while the function is already called
+      // object pointer reference with the registerToQueue key has to be there to change returned mutable reference object while the function is already called
       const singletonSyncUIRef = {
         registerToQueue: undefined as
           | undefined

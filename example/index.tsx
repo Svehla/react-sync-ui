@@ -56,7 +56,11 @@ const App = () => {
         })) !== userName
       ) {
         triesCount++;
-        await syncAlert(triesCount > 3 ? "Try to fill your user name" : `Bad password, keep trying Mr. ${userName}`);
+        await syncAlert(
+          triesCount > 3
+            ? "Try to fill your user name"
+            : `Bad password, keep trying Mr. ${userName}`
+        );
       }
 
       await syncAlert(`Congratulation Mr. ${userName}, you hacked the system`);
@@ -90,4 +94,4 @@ const App = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.render(<App />, document.getElementById("root")!);

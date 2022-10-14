@@ -5,7 +5,6 @@
 ## usage example
 
 ```tsx
-
 <button
   onClick={async () => {
     // call synchronous UI workflow with promisified React components
@@ -20,9 +19,15 @@
 >
   Login
 </button>
+```
 
+![Sync UI preview](./docs/sync-ui-preview.gif)
+
+Library provides simple `makeSyncUI<InputData, ResolveValue>` function which can transform your declarative React Components
+into the promisified callable functions.
+
+```tsx
 // defining of your custom react-sync-ui component
-
 export const syncAlert = makeSyncUI<string, void>((props) => (
   <Modal isOpen toggle={() => props.resolve()}>
     <ModalHeader>{props.data}</ModalHeader>
@@ -32,11 +37,6 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
   </Modal>
 );
 ```
-
-![Sync UI preview](./docs/sync-ui-preview.gif)
-
-Library provides simple `makeSyncUI<InputData, ResolveValue>` function which can transform your declarative React Components
-into the promisified callable functions.
 
 ## Installation
 

@@ -4,7 +4,7 @@ export const useComponentDidMount = (fn: Parameters<typeof useEffect>[0]) => {
   useEffect(fn, []);
 };
 
-const getSingletonCompCheck = (errorMsg: string) => {
+const getSingletonComponentCheck = (errorMsg: string) => {
   let globalMountCounter = 0;
 
   return () => {
@@ -16,21 +16,34 @@ const getSingletonCompCheck = (errorMsg: string) => {
   };
 };
 
-// should the word "Async" be there? is that relevant or redundant?
-export const useAsyncQueue = <Data, ResolveValue = void>() => {
+// ------------------------------------------------------------------------------------
+// TODO: there is tsdx old typescript parser and new ts fancy syntax is not working...
+// https://github.com/jaredpalmer/tsdx/issues/200
+// type PQueueItem<Data, ResolveValue> = ReturnType<typeof usePromiseQueue<any, any>>
+type PQueueItem<Data, ResolveValue> = {
+  head?: {
+    data: Data;
+    resolve: (value: ResolveValue) => void;
+    reject: (reason?: any) => void;
+  };
+  push: (data: Data) => Promise<ResolveValue>;
+};
+
+export const usePromiseQueue = <Data, ResolveValue = void>(): PQueueItem<
+  Data,
+  ResolveValue
+> => {
   const [asyncQueue, setAsyncQueue] = useState(
     [] as {
-      // TODO: rename type into typeId
-      type: Symbol;
       data: Data;
       resolve: (arg: ResolveValue) => void;
       reject: (arg: any) => void;
     }[]
   );
 
-  const registerToQueue = useCallback((type: Symbol, data: Data) => {
+  const push = useCallback((data: Data) => {
     return new Promise<ResolveValue>((resolve, reject) =>
-      setAsyncQueue(p => [...p, { type, data, resolve, reject }])
+      setAsyncQueue(p => [...p, { data, resolve, reject }])
     );
   }, []);
 
@@ -54,44 +67,36 @@ export const useAsyncQueue = <Data, ResolveValue = void>() => {
     head: asyncQueue[0]
       ? {
           data: asyncQueue[0]?.data,
-          type: asyncQueue[0]?.type,
           resolve: resolveHeadItem,
           reject: rejectHeadItem
         }
       : undefined,
-    registerToQueue
+    push
   };
 };
-// https://github.com/jaredpalmer/tsdx/issues/200???
-// TODO: there is tsdx old typescript parser and new ts fancy syntax is not working...
-// type QueueItem<Data, ResolveValue> = ReturnType<typeof useAsyncQueue<any, any>>
-type QueueItem<Data, ResolveValue> = {
-  head:
-    | {
-        data: Data;
-        type: Symbol;
-        resolve: (value: ResolveValue) => void;
-        reject: (reason?: any) => void;
-      }
-    | undefined;
-  registerToQueue: (type: Symbol, data: Data) => Promise<ResolveValue>;
-};
+
+// ------------------------------------------------------------------------------------
 
 export const syncUIFactory = () => {
-  const mutSyncUIComponentsRenderQueue = [] as React.FC<QueueItem<any, any>>[];
+  const mutSyncUIComponentsRenderQueue = [] as React.FC<PQueueItem<any, any>>[];
 
-  const ThrowIfMoreInstances = getSingletonCompCheck(
-    "You have to init <SyncUI /> just one time"
+  const ThrowIfMoreInstances = getSingletonComponentCheck(
+    "<SyncUI /> has to be initialized only once"
   );
 
   return {
-    makeSyncUI: <ArgData, ResolveValue = void>(
+    makeSyncUI: <InputData, ResolveValue = void>(
       SyncUIUserComp: React.FC<{
-        data: ArgData;
+        data: InputData;
         resolve: (value: ResolveValue) => void;
         reject: (reason?: any) => void;
       }>
     ) => {
+      type QItem = PQueueItem<
+        { type: Symbol; inputData: InputData },
+        ResolveValue
+      >;
+
       const _debugName =
         SyncUIUserComp.displayName ??
         SyncUIUserComp.name ??
@@ -99,41 +104,42 @@ export const syncUIFactory = () => {
 
       const syncUIComponentType = Symbol(_debugName);
 
-      // object pointer reference with the registerToQueue key has to be there to change returned mutable reference object while the function is already called
+      // object pointer reference with the push key has to be there to change returned mutable reference object while the function is already called
       const singletonSyncUIRef = {
-        registerToQueue: undefined as
-          | undefined
-          | QueueItem<ArgData, ResolveValue>["registerToQueue"]
+        push: undefined as undefined | QItem["push"]
       };
 
-      const SyncUISingletonComp = (props: QueueItem<ArgData, ResolveValue>) => {
+      const SyncUISingletonComponent = (props: QItem) => {
         useComponentDidMount(() => {
-          singletonSyncUIRef.registerToQueue = props.registerToQueue;
-          return () => (singletonSyncUIRef.registerToQueue = undefined);
+          singletonSyncUIRef.push = props.push;
+          return () => (singletonSyncUIRef.push = undefined);
         });
 
         if (!props.head) return null;
-        if (props.head.type !== syncUIComponentType) return null;
+        if (props.head.data.type !== syncUIComponentType) return null;
 
         return (
           <SyncUIUserComp
-            data={props.head.data}
+            data={props.head.data.inputData}
             resolve={props.head.resolve}
             reject={props.head.reject}
           />
         );
       };
 
-      mutSyncUIComponentsRenderQueue.push(SyncUISingletonComp);
+      mutSyncUIComponentsRenderQueue.push(SyncUISingletonComponent);
 
-      return (input: ArgData) => {
-        if (!singletonSyncUIRef.registerToQueue)
+      return (input: InputData) => {
+        if (!singletonSyncUIRef.push)
           throw new Error(`You have to initialize <SyncUI />`);
-        return singletonSyncUIRef.registerToQueue(syncUIComponentType, input);
+        return singletonSyncUIRef.push({
+          type: syncUIComponentType,
+          inputData: input
+        });
       };
     },
     SyncUI: () => {
-      const queue = useAsyncQueue();
+      const queue = usePromiseQueue();
       return (
         <>
           <ThrowIfMoreInstances />

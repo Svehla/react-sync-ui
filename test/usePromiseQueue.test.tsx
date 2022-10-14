@@ -1,18 +1,15 @@
 import { act } from "react-dom/test-utils";
 import { renderHook } from "@testing-library/react";
-import { useAsyncQueue } from "../src/syncUI";
+import { usePromiseQueue } from "../src/syncUI";
 
-// TODO: test use cases
-// - reject
-// - async delay behavior
-describe("useAsyncQueue", () => {
+describe("usePromiseQueue", () => {
   it("resolve queue", async () => {
-    const { result } = renderHook(useAsyncQueue);
+    const { result } = renderHook(usePromiseQueue);
 
     await act(async () => {
-      result.current.registerToQueue(Symbol(), "a");
-      result.current.registerToQueue(Symbol(), "b");
-      result.current.registerToQueue(Symbol(), "c");
+      result.current.push("a");
+      result.current.push("b");
+      result.current.push("c");
     });
 
     expect(result.current.head?.data).toBe("a");
@@ -31,22 +28,20 @@ describe("useAsyncQueue", () => {
   });
 
   it("reject queue", async () => {
-    const { result } = renderHook(useAsyncQueue);
+    const { result } = renderHook(usePromiseQueue);
 
+    let promiseToResolve: Promise<any>;
     let promiseToReject: Promise<any>;
 
-    let id = Symbol();
     await act(async () => {
-      result.current.registerToQueue(id, "a");
-      promiseToReject = result.current.registerToQueue(id, undefined);
-
+      promiseToResolve = result.current.push("a");
+      promiseToReject = result.current.push(undefined);
+      promiseToResolve
+        .then(() => expect(1).toBe(1))
+        .catch(() => expect(1).toBe(2));
       promiseToReject
-        .then(() => {
-          expect(1).toBe(2);
-        })
-        .catch(err => {
-          expect("error").toBe(err);
-        });
+        .then(() => expect(1).toBe(2))
+        .catch(err => expect("error").toBe(err));
     });
 
     await act(async () => {

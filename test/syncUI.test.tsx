@@ -13,7 +13,7 @@ describe("1", () => {
     const syncAlert = syncUI.makeSyncUI<string, void>(props => (
       <button
         onClick={async () => {
-          await delay(10);
+          await delay(5);
           counter++;
           props.resolve();
         }}
@@ -61,7 +61,7 @@ describe("1", () => {
     const syncAlert = syncUI.makeSyncUI<string, void>(props => (
       <button
         onClick={async () => {
-          await delay(10);
+          await delay(5);
           props.reject();
         }}
       >
@@ -105,7 +105,7 @@ describe("1", () => {
     const syncAlert = syncUI.makeSyncUI<string, void>(props => (
       <button
         onClick={async () => {
-          await delay(10);
+          await delay(5);
           props.resolve();
         }}
       >

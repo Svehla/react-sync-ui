@@ -82,34 +82,21 @@ const App = () => {
           onClick={async () => {
             // call synchronous UI workflow with promisified React components
 
-            const feelOk = await syncConfirm("Hello! Do you feel OK today?");
+            const likeSyncUI = await syncConfirm("Do you like this library?");
 
-            if (feelOk) {
-              await syncAlert(
-                "Good for you, I hope you'll stay in a positive mood for the rest of the day!"
-              );
+            if (likeSyncUI) {
+              await syncAlert("Thanks, we like you too");
             } else {
-              const shouldCall = await syncConfirm(
-                "I'am so sorry, may I call to someone to make you better day?"
-              );
-
-              if (shouldCall) {
-                const name = await syncPrompt("Who should I call?");
-
-                await syncAlert(`Yes, no problem, I'll call to ${name}.`);
-
-                await phoneCallToContact(name);
+              const isUserSure = await syncConfirm("Are you sure?");
+              if (isUserSure) {
+                await syncAlert("Try to give it a second try");
               } else {
-                await syncAlert(
-                  "I don't know how can I help you, so I'll redirect you to check out some cool articles."
-                );
-
-                window.location.href = "https://dev.to/svehla";
+                await syncAlert("Thanks, we like you too");
               }
             }
           }}
         >
-          Artificial intelligence
+          Run
         </Button>
       </div>
       <div style={{ marginBottom: "20rem" }}>

@@ -1,15 +1,14 @@
-# React sync ui
+# react-sync-ui
 
-`React-sync-UI` enable to do the sequential synchronous workflow with usage of
-of react components.
-Library provide simple `makeSyncUI` function which can transform your declarative React Component
-into the promisified functions
+`react-sync-ui` enable to do the sequential synchronous workflow with usage of React Components.
 
 ## usage example
 
 ```tsx
+
 <button
   onClick={async () => {
+    // call synchronous UI workflow with promisified React components
     const name = await syncPrompt("Fill your name");
 
     while ((await syncPrompt(`Fill your password!`)) !== "1234") {
@@ -21,7 +20,23 @@ into the promisified functions
 >
   Login
 </button>
+
+// defining of your custom react-sync-ui component
+
+export const syncAlert = makeSyncUI<string, void>((props) => (
+  <Modal isOpen toggle={() => props.resolve()}>
+    <ModalHeader>{props.data}</ModalHeader>
+    <ModalFooter>
+      <Button onClick={() => props.resolve()}>OK</Button>
+    </ModalFooter>
+  </Modal>
+);
 ```
+
+![Sync UI preview](./docs/sync-ui-preview.gif)
+
+Library provides simple `makeSyncUI<InputData, ResolveValue>` function which can transform your declarative React Components
+into the promisified callable functions.
 
 ## Installation
 
@@ -55,13 +70,11 @@ Now, you just have to define your custom UI which will be promisifed by `react-s
 `makeSyncUI` returns Promise which render your custom React Component and
 will be resolve when you call `props.resolve(any)` in the UI
 
-![Sync UI preview](./docs/sync-ui-preview.gif)
-
 #### Alert example
 
 ```tsx
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import { SyncUI } from "react-sync-ui";
+import { makeSyncUI } from "react-sync-ui";
 
 export const syncAlert = makeSyncUI<string, void>((props) => (
   <Modal isOpen={true} toggle={() => props.resolve()}>
@@ -142,7 +155,7 @@ export const syncPrompt = makeSyncUI<string, string>((props) => {
 
 ```tsx
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import { makeSyncUI } from "../../dist";
+import { makeSyncUI } from "react-sync-ui";
 
 export const syncConfirm = makeSyncUI<
   {

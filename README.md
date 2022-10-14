@@ -55,7 +55,7 @@ Now, you just have to define your custom UI which will be promisifed by `react-s
 `makeSyncUI` returns Promise which render your custom React Component and
 will be resolve when you call `props.resolve(any)` in the UI
 
-![./docs/sync-ui-preview.gif](Sync UI preview)
+![Sync UI preview](./docs/sync-ui-preview.gif)
 
 #### Alert example
 

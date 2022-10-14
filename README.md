@@ -1,6 +1,6 @@
 # react-sync-ui
 
-`react-sync-ui` enable to do the sequential synchronous workflow with usage of React Components.
+`react-sync-ui` promisify your React Components and make your UI awaitable.
 
 ## usage example
 
@@ -23,8 +23,8 @@
 
 ![Sync UI preview](./docs/sync-ui-preview.gif)
 
-Library provides simple `makeSyncUI<InputData, ResolveValue>` function which can transform your declarative React Components
-into the promisified callable functions.
+Library provides simple function `makeSyncUI<InputData, ResolveValue>` which transform your declarative React Components
+into the promisified awaitable functions.
 
 ```tsx
 // defining of your custom react-sync-ui component
@@ -42,18 +42,20 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
 
 For a long time, I did not like that React's functional way of declarative UI forced you to write nice UI code, but with ugly distributed business logic.
 When you have a complex business use case which is a composition of asynchronous actions like HTTP requests together with user interactions,
-your business logic code is distributed over many async React handlers and it's really hard to understand the sequence of operations and what is going on.
+your business logic code is distributed over many async React handlers and it's really hard to understand the sequence of business logic.
 
-People very often solve this problem by dependencies in the `useEffect(..., [dependency])` which transfer react logic to the event-driven architecture.
-When you change the variable value, the different components will register the dependency change inside of `useEffect`, and some other code is called.
-With this event-driven programming, your code complexity is at least 1000 times more complex, and your newcomers who see the code have no idea what the business workflow is.
+People very often solve this problem by dependencies in the `useEffect(..., [dependency])` which transfer React logic to the event-driven architecture.
+When you change the dependency variable value, the different components will register the dependency change inside of `useEffect`, and some other code is called.
+With this event-driven programming style, your code complexity is 1000 times more complex, and your newcomer programmes who see the code have the business workflow is.
 
 A nice solution for this problem is to wrap your declarative React components into Promise wrappers which split your UIs into many
 smaller functions that can be simply composed together inside of your Javascript function and you'll get very complex business logic in just a few lines of code.
 
-Thanks to `react-sync-ui` you may implement just your custom UI and don't have to care about the implementation detail of promise wrapping.
+Thanks to `react-sync-ui` you can simply promisify your React Components UI and make your UI awaitable.
 
 And that's why `react-sync-ui` was created. ❤
+
+PS: i took inspiration from awesome functions: `window.alert`, `window.confirm` and `window.prompt`.
 
 ## Installation
 

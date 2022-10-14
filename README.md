@@ -14,7 +14,7 @@
       await syncAlert("Invalid password, keep trying");
     }
 
-    await syncAlert(`Congratulation Mr. ${name}, you are logged in`);
+    await syncAlert(`Congratulation ${name}, you are logged in`);
   }}
 >
   Login
@@ -23,7 +23,7 @@
 
 ![Sync UI preview](./docs/sync-ui-preview.gif)
 
-Library provides simple function `makeSyncUI<InputData, ResolveValue>` which transform your declarative React Components
+`react-sync-ui` provides function `makeSyncUI<InputData, ResolveValue>` which transform your declarative React Components
 into the promisified awaitable functions.
 
 ```tsx
@@ -38,14 +38,14 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
 );
 ```
 
-## what problem is `react-sync-ui` solving?
+## what is `react-sync-ui` solving?
 
 For a long time, I did not like that React's functional way of declarative UI forced you to write nice UI code, but with ugly distributed business logic.
 When you have a complex business use case which is a composition of asynchronous actions like HTTP requests together with user interactions,
 your business logic code is distributed over many async React handlers and it's really hard to understand the sequence of business logic.
 
 People very often solve this problem by dependencies in the `useEffect(..., [dependency])` which transfer React logic to the event-driven architecture.
-When you change the dependency variable value, the different components will register the dependency change inside of `useEffect`, and some other code is called.
+When you change the dependency variable value, the different components will register the dependency change, and `useEffect` will be re-called.
 With this event-driven programming style, your code complexity is 1000 times more complex, and your newcomer programmes who see the code have the business workflow is.
 
 A nice solution for this problem is to wrap your declarative React components into Promise wrappers which split your UIs into many

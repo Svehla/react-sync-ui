@@ -38,14 +38,14 @@ const App = () => {
         description: "Do you want to play a game?"
       });
       if (!shouldContinue) {
-        await syncAlert(`Bad luck Mr. ${userName}, you have to!`);
+        await syncAlert(`Bad luck ${userName}, you have to!`);
       }
 
       let triesCount = 0;
 
       while (
         (await syncRichPrompt({
-          title: `Fill the secret Mr. ${userName}!`,
+          title: `Fill the secret ${userName}!`,
           canUserReject: true,
           inputType: "password"
         })) !== userName
@@ -54,11 +54,11 @@ const App = () => {
         await syncAlert(
           triesCount > 3
             ? "Try to fill your user name"
-            : `Bad password, keep trying Mr. ${userName}`
+            : `Bad password, keep trying ${userName}`
         );
       }
 
-      await syncAlert(`Congratulation Mr. ${userName}, you hacked the system`);
+      await syncAlert(`Congratulation ${userName}, you hacked the system`);
     } catch (error) {
       console.error(error);
       await syncAlert("U quit the G A M E... U Loser!");
@@ -82,7 +82,7 @@ const App = () => {
               await syncAlert("Invalid password, keep trying");
             }
 
-            await syncAlert(`Congratulation Mr. ${name}, you are logged in`);
+            await syncAlert(`Congratulation ${name}, you are logged in`);
           }}
         >
           Login

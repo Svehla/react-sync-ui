@@ -8,6 +8,43 @@
 <button
   onClick={async () => {
     // call synchronous UI workflow with promisified React components
+
+    const feelOk = await syncConfirm("Hello! Do you feel OK today?");
+
+    if (feelOk) {
+      await syncAlert(
+        "Good for you, I hope you'll stay in a positive mood for the rest of the day!"
+      );
+    } else {
+      const shouldCall = await syncConfirm(
+        "I'am so sorry, may I call to someone to make you better day?"
+      );
+
+      if (shouldCall) {
+        const name = await syncPrompt("Who should I call?");
+
+        await syncAlert(`Yes, no problem, I'll call to ${name}.`);
+
+        await phoneCallToContact(name);
+      } else {
+        await syncAlert(
+          "I don't know how can I help you, so I'll redirect you to check out some cool articles."
+        );
+
+        window.location.href = "https://dev.to/svehla";
+      }
+    }
+  }}
+>
+  Artificial intelligence
+</button>
+```
+
+![Sync UI preview](./docs/decision-tree-sync-ui.gif)
+
+```tsx
+<button
+  onClick={async () => {
     const name = await syncPrompt("Fill your name");
 
     while ((await syncPrompt(`Fill your password!`)) !== "1234") {
@@ -21,7 +58,7 @@
 </button>
 ```
 
-![Sync UI preview](./docs/sync-ui-preview.gif)
+![Sync UI preview](./docs/while-true-sync-ui.gif)
 
 `react-sync-ui` provides function `makeSyncUI<InputData, ResolveValue>` which transform your declarative React Components
 into the promisified awaitable functions.

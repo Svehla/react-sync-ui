@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "../../dist";
 
-export const syncConfirm = makeSyncUI<
+export const syncRichConfirm = makeSyncUI<
   {
     title: string;
     description?: string;
@@ -17,8 +17,14 @@ export const syncConfirm = makeSyncUI<
     {props.data.description && <ModalBody>{props.data.description}</ModalBody>}
 
     <ModalFooter>
-      <Button onClick={() => props.resolve(true)}>{props.data.okBtn ?? "Yes"}</Button>
-      <Button onClick={() => props.resolve(false)}>{props.data.notOkBtn ?? "No"}</Button>
+      <Button onClick={() => props.resolve(true)}>
+        {props.data.okBtn ?? "Yes"}
+      </Button>
+      <Button onClick={() => props.resolve(false)}>
+        {props.data.notOkBtn ?? "No"}
+      </Button>
     </ModalFooter>
   </Modal>
 ));
+
+export const syncConfirm = (title: string) => syncRichConfirm({ title });

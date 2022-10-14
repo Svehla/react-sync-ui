@@ -5,7 +5,7 @@ import * as ReactDOM from "react-dom";
 import { Button, Container } from "reactstrap";
 import { SyncUI, syncUIFactory } from "../dist";
 import { syncAlert } from "./syncComponents/SyncAlert";
-import { syncConfirm } from "./syncComponents/SyncConfirm";
+import { syncConfirm, syncRichConfirm } from "./syncComponents/SyncConfirm";
 import { syncPrompt, syncRichPrompt } from "./syncComponents/SyncPrompt";
 
 export const secondInstance = syncUIFactory();
@@ -33,7 +33,7 @@ const App = () => {
     try {
       const userName = "User";
 
-      const shouldContinue = await syncConfirm({
+      const shouldContinue = await syncRichConfirm({
         title: `Hi ${userName}!`,
         description: "Do you want to play a game?"
       });
@@ -67,12 +67,51 @@ const App = () => {
     }
   };
 
+  const phoneCallToContact = async (name: string) => {
+    console.log(`call to ${name}`);
+  };
+
   return (
     <Container style={{ paddingTop: "4rem" }}>
       <SyncUI />
 
       <secondInstance.SyncUI />
 
+      <div style={{ marginBottom: "20rem" }}>
+        <Button
+          onClick={async () => {
+            // call synchronous UI workflow with promisified React components
+
+            const feelOk = await syncConfirm("Hello! Do you feel OK today?");
+
+            if (feelOk) {
+              await syncAlert(
+                "Good for you, I hope you'll stay in a positive mood for the rest of the day!"
+              );
+            } else {
+              const shouldCall = await syncConfirm(
+                "I'am so sorry, may I call to someone to make you better day?"
+              );
+
+              if (shouldCall) {
+                const name = await syncPrompt("Who should I call?");
+
+                await syncAlert(`Yes, no problem, I'll call to ${name}.`);
+
+                await phoneCallToContact(name);
+              } else {
+                await syncAlert(
+                  "I don't know how can I help you, so I'll redirect you to check out some cool articles."
+                );
+
+                window.location.href = "https://dev.to/svehla";
+              }
+            }
+          }}
+        >
+          Artificial intelligence
+        </Button>
+      </div>
       <div style={{ marginBottom: "20rem" }}>
         <Button
           onClick={async () => {

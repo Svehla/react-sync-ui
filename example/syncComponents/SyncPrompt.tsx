@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "../../dist";
 
-export const syncPrompt = makeSyncUI<
+export const syncRichPrompt = makeSyncUI<
   {
     title: string;
     description?: string;
@@ -31,7 +31,9 @@ export const syncPrompt = makeSyncUI<
       >
         <ModalHeader>{props.data.title}</ModalHeader>
 
-        {props.data.description && <ModalBody>{props.data.description}</ModalBody>}
+        {props.data.description && (
+          <ModalBody>{props.data.description}</ModalBody>
+        )}
 
         <ModalBody>
           <label>
@@ -53,3 +55,5 @@ export const syncPrompt = makeSyncUI<
     </Modal>
   );
 });
+
+export const syncPrompt = (title: string) => syncRichPrompt({ title });

@@ -1,36 +1,37 @@
 # React sync ui
 
-This library enables to synchronous workflow like this where based on the sequential business logic is react state changed
+`React-sync-UI` enable to do the sequential synchronous workflow with usage of
+of react components.
+Library provide simple `makeSyncUI` function which can transform your declarative React Component
+into the promisified functions
 
 ## usage example
 
-```ts
-const workflow = async () => {
-  let isOk = false;
+```tsx
+<button
+  onClick={async () => {
+    const name = await syncPrompt("Fill your name");
 
-  const name = await syncPrompt("fill your name");
+    while ((await syncPrompt(`Fill your password!`)) !== "1234") {
+      await syncAlert("Invalid password, keep trying");
+    }
 
-  let triesCount = 0;
-
-  while (
-    (await syncPrompt(`Hello ${name}, fill the secret password!`)) !== userName
-  ) {
-    await syncAlert("Invalid password, keep trying");
-  }
-
-  await syncAlert(`Congratulation Mr. ${userName}, you are logged in`);
-};
+    await syncAlert(`Congratulation Mr. ${name}, you are logged in`);
+  }}
+>
+  Login
+</button>
 ```
 
 ## Installation
 
-```
+```bash
 npm i react-sync-ui
 ```
 
 ## Usage
 
-### Setup SyncUI Component into the root of yout project
+### Setup `<SyncUI />` Component into the root of yout project
 
 ```tsx
 import { SyncUI } from 'react-sync-ui'
@@ -42,15 +43,19 @@ const App = () => (
   <>
 )
 
-ReactDOM.render(<App />, document.getElementById("root"));
+const root = createRoot(document.getElementById('root')!);
+root.render(<App />);
 
 ```
 
-### Code usage examples
+### create sync UI
 
-Create your UI connectd to the syncUI wrapper
+Now, you just have to define your custom UI which will be promisifed by `react-sync-ui` library.
 
-syncUI enables you to do the abstraction to promisify your react Components
+`makeSyncUI` returns Promise which render your custom React Component and
+will be resolve when you call `props.resolve(any)` in the UI
+
+![./docs/sync-ui-preview.gif](Sync UI preview)
 
 #### Alert example
 
@@ -68,10 +73,12 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
 );
 
 
-/// usage:
+// usage:
 
 <button
   onClick={async () => {
+    await syncAlert("Wait for it...");
+    await syncAlert("Wait for it...");
     await syncAlert("You're hacked");
   }}
 >
@@ -120,7 +127,7 @@ export const syncPrompt = makeSyncUI<string, string>((props) => {
   );
 });
 
-/// usage:
+// usage:
 
 <button
   onClick={async () => {
@@ -162,7 +169,7 @@ export const syncConfirm = makeSyncUI<
   </Modal>
 ));
 
-/// usage:
+// usage:
 
 <button
   onClick={async () => {

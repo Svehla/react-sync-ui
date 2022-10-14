@@ -255,4 +255,4 @@ export const syncUI2 = syncUIFactory();
 
 You may check the full multiple queue example here
 
-![react-sync-ui/example/MultiQueuesApp.tsx](https://github.com/Svehla/react-sync-ui/blob/main/example/MultiQueuesApp.tsx)
+[react-sync-ui/example/MultiQueuesApp.tsx](https://github.com/Svehla/react-sync-ui/blob/main/example/MultiQueuesApp.tsx)

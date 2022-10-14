@@ -19,8 +19,8 @@ const getSingletonComponentCheck = (errorMsg: string) => {
 // ------------------------------------------------------------------------------------
 // TODO: there is tsdx old typescript parser and new ts fancy syntax is not working...
 // https://github.com/jaredpalmer/tsdx/issues/200
-// type PQueueItem<Data, ResolveValue> = ReturnType<typeof usePromiseQueue<any, any>>
-type PQueueItem<Data, ResolveValue> = {
+// type PromiseQueueAPI<Data, ResolveValue> = ReturnType<typeof usePromiseQueue<any, any>>
+type PromiseQueueAPI<Data, ResolveValue> = {
   head?: {
     data: Data;
     resolve: (value: ResolveValue) => void;
@@ -29,7 +29,7 @@ type PQueueItem<Data, ResolveValue> = {
   push: (data: Data) => Promise<ResolveValue>;
 };
 
-export const usePromiseQueue = <Data, ResolveValue = void>(): PQueueItem<
+export const usePromiseQueue = <Data, ResolveValue = void>(): PromiseQueueAPI<
   Data,
   ResolveValue
 > => {
@@ -78,7 +78,9 @@ export const usePromiseQueue = <Data, ResolveValue = void>(): PQueueItem<
 // ------------------------------------------------------------------------------------
 
 export const syncUIFactory = () => {
-  const mutSyncUIComponentsRenderQueue = [] as React.FC<PQueueItem<any, any>>[];
+  const mutSyncUIComponentsRenderQueue = [] as React.FC<
+    PromiseQueueAPI<any, any>
+  >[];
 
   const ThrowIfMoreInstances = getSingletonComponentCheck(
     "<SyncUI /> has to be initialized only once"
@@ -92,7 +94,7 @@ export const syncUIFactory = () => {
         reject: (reason?: any) => void;
       }>
     ) => {
-      type QItem = PQueueItem<
+      type QItem = PromiseQueueAPI<
         { type: Symbol; inputData: InputData },
         ResolveValue
       >;

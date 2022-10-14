@@ -38,6 +38,23 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
 );
 ```
 
+## what problem is `react-sync-ui` solving?
+
+For a long time, I did not like that React's functional way of declarative UI forced you to write nice UI code, but with ugly distributed business logic.
+When you have a complex business use case which is a composition of asynchronous actions like HTTP requests together with user interactions,
+your business logic code is distributed over many async React handlers and it's really hard to understand the sequence of operations and what is going on.
+
+People very often solve this problem by dependencies in the `useEffect(..., [dependency])` which transfer react logic to the event-driven architecture.
+When you change the variable value, the different components will register the dependency change inside of `useEffect`, and some other code is called.
+With this event-driven programming, your code complexity is at least 1000 times more complex, and your newcomers who see the code have no idea what the business workflow is.
+
+A nice solution for this problem is to wrap your declarative React components into Promise wrappers which split your UIs into many
+smaller functions that can be simply composed together inside of your Javascript function and you'll get very complex business logic in just a few lines of code.
+
+Thanks to `react-sync-ui` you may implement just your custom UI and don't have to care about the implementation detail of promise wrapping.
+
+And that's why `react-sync-ui` was created. ❤
+
 ## Installation
 
 ```bash
@@ -65,10 +82,10 @@ root.render(<App />);
 
 ### create sync UI
 
-Now, you just have to define your custom UI which will be promisifed by `react-sync-ui` library.
+Now, you just have to define your custom React component which will be promisifed by `makeSyncUI` function.
 
-`makeSyncUI` returns Promise which render your custom React Component and
-will be resolve when you call `props.resolve(any)` in the UI
+`makeSyncUI` returns Promise which render your custom React Component.
+Promise will be resolve when you call `props.resolve(any)` inside of your custom UI.
 
 #### Alert example
 

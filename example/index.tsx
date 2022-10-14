@@ -3,6 +3,7 @@ import "react-app-polyfill/ie11";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { Button, Container } from "reactstrap";
+import { MultiQueuesApp } from "./MultiQueuesApp";
 import { SyncUI, syncUIFactory } from "../dist";
 import { syncAlert } from "./syncComponents/SyncAlert";
 import { syncConfirm, syncRichConfirm } from "./syncComponents/SyncConfirm";
@@ -130,6 +131,7 @@ const App = () => {
           Start hacking second queue
         </Button>
       </div>
+      <MultiQueuesApp />
     </Container>
   );
 };

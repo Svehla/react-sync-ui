@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-export const useComponentDidMount = (fn: Parameters<typeof useEffect>[0]) => {
+const useComponentDidMount = (fn: Parameters<typeof useEffect>[0]) => {
   useEffect(fn, []);
 };
 

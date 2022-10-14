@@ -239,3 +239,20 @@ export const syncConfirm = makeSyncUI<
   click to me
 </button>;
 ```
+
+## Advance use-case, Multiple async queues
+
+You're able to initialized multiple independent instances of `react-sync-ui` queue.
+
+Multiple instances are made by `xxx`
+
+```tsx
+import { syncUIFactory } from "react-sync-ui";
+
+export const syncUI1 = syncUIFactory();
+export const syncUI2 = syncUIFactory();
+```
+
+You may check the full multiple queue example here
+
+![react-sync-ui/example/MultiQueuesApp.tsx](https://github.com/Svehla/react-sync-ui/blob/main/example/MultiQueuesApp.tsx)

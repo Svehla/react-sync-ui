@@ -27,7 +27,7 @@
 </button>
 ```
 
-![Sync UI preview](./docs/decision-tree-sync-ui.gif)
+![Sync UI preview](https://github.com/Svehla/react-sync-ui/blob/main/docs/decision-tree-sync-ui.gif?raw=true)
 
 ```tsx
 <button
@@ -45,7 +45,7 @@
 </button>
 ```
 
-![Sync UI preview](./docs/while-true-sync-ui.gif)
+![Sync UI preview](https://github.com/Svehla/react-sync-ui/blob/main/docs/while-true-sync-ui.gif?raw=true)
 
 `react-sync-ui` provides function `makeSyncUI<InputData, ResolveValue>` which transform your declarative React Components
 into the promisified awaitable functions.
@@ -79,7 +79,7 @@ Thanks to `react-sync-ui` you can simply promisify your React Components UI and 
 
 And that's why `react-sync-ui` was created. ❤
 
-PS: i took inspiration from awesome functions: `window.alert`, `window.confirm` and `window.prompt`.
+PS: I took inspiration from awesome functions: `window.alert`, `window.confirm` and `window.prompt`.
 
 ## Installation
 

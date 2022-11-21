@@ -30,6 +30,8 @@
     "source.fixAll.eslint": true
   },
   "cSpell.words": [
+    "autofix",
+    "Jakub",
     "tsdx"
   ]
 }

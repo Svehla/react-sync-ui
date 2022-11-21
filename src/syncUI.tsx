@@ -4,6 +4,8 @@ const useComponentDidMount = (fn: Parameters<typeof useEffect>[0]) => {
   useEffect(fn, []);
 };
 
+// this function broke the working of the hot reloading
+/*
 const getSingletonComponentCheck = (errorMsg: string) => {
   let globalMountCounter = 0;
 
@@ -15,6 +17,7 @@ const getSingletonComponentCheck = (errorMsg: string) => {
     return <React.Fragment />;
   };
 };
+*/
 
 // ------------------------------------------------------------------------------------
 // TODO: there is tsdx old typescript parser and new ts fancy syntax is not working...
@@ -82,9 +85,12 @@ export const syncUIFactory = () => {
     PromiseQueueAPI<any, any>
   >[];
 
+  /*
+  // this check broke the working of the hot reloading
   const ThrowIfMoreInstances = getSingletonComponentCheck(
     "<SyncUI /> has to be initialized only once"
   );
+  */
 
   return {
     makeSyncUI: <InputData, ResolveValue = void>(
@@ -144,7 +150,7 @@ export const syncUIFactory = () => {
       const queue = usePromiseQueue();
       return (
         <>
-          <ThrowIfMoreInstances />
+          {/* <ThrowIfMoreInstances /> */}
           {mutSyncUIComponentsRenderQueue.map((SyncComp, key) => (
             <React.Fragment key={key}>
               <SyncComp {...queue} />

@@ -1,11 +1,11 @@
 {
   "name": "react-sync-ui",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": "https://github.com/Svehla/react-sync-ui",
   "license": "MIT",
   "author": "Jakub Švehla",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/react-sync-ui.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",

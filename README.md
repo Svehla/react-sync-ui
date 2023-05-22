@@ -59,7 +59,7 @@ export const syncAlert = makeSyncUI<string, void>((props) => (
       <Button onClick={() => props.resolve()}>OK</Button>
     </ModalFooter>
   </Modal>
-);
+));
 ```
 
 ## what is `react-sync-ui` solving?

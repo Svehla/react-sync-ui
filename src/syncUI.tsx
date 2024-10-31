@@ -101,7 +101,7 @@ export const syncUIFactory = () => {
       }>
     ) => {
       type QItem = PromiseQueueAPI<
-        { type: Symbol; inputData: InputData },
+        { type: Symbol; inputData: InputData; reactCompKey: string },
         ResolveValue
       >;
 
@@ -128,6 +128,7 @@ export const syncUIFactory = () => {
 
         return (
           <SyncUIUserComp
+            key={props.head.data.reactCompKey}
             data={props.head.data.inputData}
             resolve={props.head.resolve}
             reject={props.head.reject}
@@ -140,9 +141,12 @@ export const syncUIFactory = () => {
       return (input: InputData) => {
         if (!singletonSyncUIRef.push)
           throw new Error(`You have to initialize <SyncUI />`);
+
+        const reactCompKey = Math.random().toString();
         return singletonSyncUIRef.push({
           type: syncUIComponentType,
-          inputData: input
+          inputData: input,
+          reactCompKey
         });
       };
     },

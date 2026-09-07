@@ -1,20 +1,37 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": false,
-    "target": "es5",
-    "module": "commonjs",
-    "jsx": "react",
-    "moduleResolution": "node",
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    // interop between ESM and CJS modules. Recommended by TS
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
     "esModuleInterop": true,
-    "removeComments": true,
-    "strictNullChecks": true,
-    "preserveConstEnums": true,
-    "sourceMap": true,
-    "lib": ["es2015", "es2016", "dom"],
-    "types": ["node"]
-  }
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      // run (and type-check) the example against the library SOURCE
+      "react-sync-ui": ["../src/index.ts"],
+      // ../src lives outside this package, so plain node resolution would look
+      // for React in the REPO ROOT node_modules. Pin every react import - the
+      // example's and the library source's - to the example's React 19 types,
+      // the same thing `resolve.dedupe` does for the bundler.
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-dom": ["./node_modules/@types/react-dom"],
+      "react-dom/*": ["./node_modules/@types/react-dom/*"]
+    }
+  },
+  "include": [
+    "main.tsx",
+    "MultiQueuesApp.tsx",
+    "PreMountQueueDemo.tsx",
+    "syncComponents",
+    "vite.config.ts"
+  ]
 }

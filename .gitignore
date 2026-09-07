@@ -4,3 +4,9 @@ node_modules
 .cache
 dist
 __generated_examples__
+
+# build / test artifacts
+coverage
+*.tsbuildinfo
+.vite
+.eslintcache

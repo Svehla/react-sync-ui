@@ -1,6 +1,5 @@
-import * as React from "react";
 import { Button, Modal, ModalFooter, ModalHeader } from "reactstrap";
-import { makeSyncUI } from "../../dist";
+import { makeSyncUI } from "react-sync-ui";
 
 export const syncAlert = makeSyncUI<string, void>(function SyncAlert(props) {
   return (

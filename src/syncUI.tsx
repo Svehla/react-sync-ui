@@ -1,167 +1,362 @@
-import React, { useCallback, useEffect, useState } from "react";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  useSyncExternalStore
+} from "react";
+import type { ComponentType, ErrorInfo, ReactElement, ReactNode } from "react";
 
-const useComponentDidMount = (fn: Parameters<typeof useEffect>[0]) => {
-  useEffect(fn, []);
-};
-
-// this function broke the working of the hot reloading
-/*
-const getSingletonComponentCheck = (errorMsg: string) => {
-  let globalMountCounter = 0;
-
-  return () => {
-    useComponentDidMount(() => {
-      if (globalMountCounter > 0) throw new Error(errorMsg);
-      globalMountCounter++;
-    });
-    return <React.Fragment />;
-  };
-};
-*/
+// The library build leaves `process.env.NODE_ENV` untouched on purpose so the
+// consumer's bundler decides. It has to stay a bare expression: wrapping it
+// (IIFE, try/catch) stops the bundler from constant-folding it, and the dev
+// warnings below would then survive into production bundles.
+declare const process: { env: { NODE_ENV?: string } };
+const isDev = process.env.NODE_ENV !== "production";
 
 // ------------------------------------------------------------------------------------
-// TODO: there is tsdx old typescript parser and new ts fancy syntax is not working...
-// https://github.com/jaredpalmer/tsdx/issues/200
-// type PromiseQueueAPI<Data, ResolveValue> = ReturnType<typeof usePromiseQueue<any, any>>
-type PromiseQueueAPI<Data, ResolveValue> = {
+// public types
+
+export type SyncUIProps<Data, Result = void> = {
+  data: Data;
+  resolve: (value: Result) => void;
+  reject: (reason?: unknown) => void;
+};
+
+// ComponentType, not a bare function type: React 19's FC returns
+// `ReactNode | Promise<ReactNode>`, so `React.FC<SyncUIProps<...>>`, memo(),
+// forwardRef() and class components all have to be accepted here.
+export type SyncUIComponent<Data, Result = void> = ComponentType<
+  SyncUIProps<Data, Result>
+>;
+
+export type PromiseQueueAPI<Data, ResolveValue> = {
   head?: {
     data: Data;
     resolve: (value: ResolveValue) => void;
-    reject: (reason?: any) => void;
+    reject: (reason?: unknown) => void;
   };
   push: (data: Data) => Promise<ResolveValue>;
 };
+
+export type SyncUIFactory = {
+  makeSyncUI: <InputData, ResolveValue = void>(
+    Component: SyncUIComponent<InputData, ResolveValue>
+  ) => (input: InputData) => Promise<ResolveValue>;
+  SyncUI: () => ReactElement | null;
+};
+
+// ------------------------------------------------------------------------------------
+// queue store
+
+type Listener = () => void;
+
+type Entry<Data, ResolveValue> = {
+  readonly id: number;
+  readonly type: symbol;
+  readonly data: Data;
+  readonly resolve: (value: ResolveValue) => void;
+  readonly reject: (reason?: unknown) => void;
+};
+
+// Monotonic, so React keys are unique per queued item (no Math.random()).
+let entrySeq = 0;
+
+/**
+ * The queue lives OUTSIDE React. Every mutation happens in an event handler or
+ * an async continuation, never during render and never inside a setState
+ * updater, so StrictMode's double render / double updater passes and HMR
+ * remounts can neither duplicate nor lose a promise settlement.
+ */
+const createQueueStore = <Data, ResolveValue>() => {
+  let queue: readonly Entry<Data, ResolveValue>[] = [];
+  const listeners = new Set<Listener>();
+
+  const emit = () => {
+    listeners.forEach(listener => listener());
+  };
+
+  // Stable identity, so React never re-subscribes.
+  const subscribe = (listener: Listener) => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  };
+
+  // useSyncExternalStore needs a cached snapshot: `queue` is only ever
+  // replaced, never mutated, so the head entry keeps its identity until it
+  // actually leaves the queue.
+  const getHead = (): Entry<Data, ResolveValue> | null => queue[0] ?? null;
+
+  const push = (type: symbol, data: Data) =>
+    new Promise<ResolveValue>((resolve, reject) => {
+      // The Promise executor runs synchronously, so the entry is queued
+      // before push() returns.
+      queue = [...queue, { id: ++entrySeq, type, data, resolve, reject }];
+      emit();
+    });
+
+  // Settles exactly once. Membership in the queue is the "not yet settled"
+  // flag, so a second call, or a call from a stale closure, is a no-op.
+  const settle = (
+    entry: Entry<Data, ResolveValue>,
+    run: (entry: Entry<Data, ResolveValue>) => void
+  ) => {
+    const next = queue.filter(item => item !== entry);
+    if (next.length === queue.length) return;
+    queue = next;
+    emit();
+    run(entry);
+  };
+
+  return {
+    subscribe,
+    emit,
+    getHead,
+    push,
+    size: () => queue.length,
+    resolveEntry: (entry: Entry<Data, ResolveValue>, value: ResolveValue) =>
+      settle(entry, item => item.resolve(value)),
+    rejectEntry: (entry: Entry<Data, ResolveValue>, reason?: unknown) =>
+      settle(entry, item => item.reject(reason))
+  };
+};
+
+const getNullSnapshot = () => null;
+
+// ------------------------------------------------------------------------------------
+// usePromiseQueue
+
+const defaultQueueType = Symbol("usePromiseQueue");
 
 export const usePromiseQueue = <Data, ResolveValue = void>(): PromiseQueueAPI<
   Data,
   ResolveValue
 > => {
-  const [asyncQueue, setAsyncQueue] = useState(
-    [] as {
-      data: Data;
-      resolve: (arg: ResolveValue) => void;
-      reject: (arg: any) => void;
-    }[]
+  // Lazy initializer: StrictMode may run it twice, but it only allocates.
+  const [store] = useState(() => createQueueStore<Data, ResolveValue>());
+  const head = useSyncExternalStore(
+    store.subscribe,
+    store.getHead,
+    getNullSnapshot
+  );
+  const push = useCallback(
+    (data: Data) => store.push(defaultQueueType, data),
+    [store]
   );
 
-  const push = useCallback((data: Data) => {
-    return new Promise<ResolveValue>((resolve, reject) =>
-      setAsyncQueue(p => [...p, { data, resolve, reject }])
-    );
-  }, []);
-
-  const resolveHeadItem = useCallback((value: ResolveValue) => {
-    setAsyncQueue(queue => {
-      const [first, ...rest] = queue;
-      first?.resolve(value);
-      return rest;
-    });
-  }, []);
-
-  const rejectHeadItem = useCallback((reason?: any) => {
-    setAsyncQueue(queue => {
-      const [first, ...rest] = queue;
-      first?.reject(reason);
-      return rest;
-    });
-  }, []);
-
-  return {
-    head: asyncQueue[0]
-      ? {
-          data: asyncQueue[0]?.data,
-          resolve: resolveHeadItem,
-          reject: rejectHeadItem
-        }
-      : undefined,
-    push
-  };
+  return useMemo(
+    () => ({
+      head: head
+        ? {
+            data: head.data,
+            // Bound to THIS entry: stale or repeated calls are no-ops.
+            resolve: (value: ResolveValue) => store.resolveEntry(head, value),
+            reject: (reason?: unknown) => store.rejectEntry(head, reason)
+          }
+        : undefined,
+      push
+    }),
+    [head, push, store]
+  );
 };
 
 // ------------------------------------------------------------------------------------
+// syncUIFactory
 
-export const syncUIFactory = () => {
-  const mutSyncUIComponentsRenderQueue = [] as React.FC<
-    PromiseQueueAPI<any, any>
-  >[];
+// The registry has to accept components of every Data/Result shape.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySyncUIComponent = SyncUIComponent<any, any>;
 
-  /*
-  // this check broke the working of the hot reloading
-  const ThrowIfMoreInstances = getSingletonComponentCheck(
-    "<SyncUI /> has to be initialized only once"
-  );
-  */
+// A dialog that throws during render used to be a poison pill: the app's own
+// error boundary caught it, <SyncUI /> unmounted, and the entry stayed at the
+// head of the queue forever, hanging its own promise and every queued one.
+// This boundary keeps the failure local: the entry is rejected (the caller's
+// `await` throws, which is the error channel) and the queue moves on. It is
+// remounted per entry via `key`, so the next dialog renders fresh.
+type SyncUIBoundaryProps<Data, ResolveValue> = {
+  entry: Entry<Data, ResolveValue>;
+  onError: (entry: Entry<Data, ResolveValue>, error: unknown) => void;
+  children: ReactNode;
+};
 
-  return {
-    makeSyncUI: <InputData, ResolveValue = void>(
-      SyncUIUserComp: React.FC<{
-        data: InputData;
-        resolve: (value: ResolveValue) => void;
-        reject: (reason?: any) => void;
-      }>
-    ) => {
-      type QItem = PromiseQueueAPI<
-        { type: Symbol; inputData: InputData; reactCompKey: string },
-        ResolveValue
-      >;
+type SyncUIBoundaryState = { failed: boolean };
 
-      const _debugName =
-        SyncUIUserComp.displayName ??
-        SyncUIUserComp.name ??
-        "uniqSymbolMessageType";
+class SyncUIErrorBoundary extends Component<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  SyncUIBoundaryProps<any, any>,
+  SyncUIBoundaryState
+> {
+  state: SyncUIBoundaryState = { failed: false };
 
-      const syncUIComponentType = Symbol(_debugName);
+  static getDerivedStateFromError(): SyncUIBoundaryState {
+    return { failed: true };
+  }
 
-      // object pointer reference with the push key has to be there to change returned mutable reference object while the function is already called
-      const singletonSyncUIRef = {
-        push: undefined as undefined | QItem["push"]
-      };
+  componentDidCatch(error: unknown, _info: ErrorInfo) {
+    // Not re-thrown on purpose: the promise rejection is the error channel,
+    // and React already logs the caught error itself in development.
+    this.props.onError(this.props.entry, error);
+  }
 
-      const SyncUISingletonComponent = (props: QItem) => {
-        useComponentDidMount(() => {
-          singletonSyncUIRef.push = props.push;
-          return () => (singletonSyncUIRef.push = undefined);
-        });
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
-        if (!props.head) return null;
-        if (props.head.data.type !== syncUIComponentType) return null;
+export const syncUIFactory = (): SyncUIFactory => {
+  const store = createQueueStore<unknown, unknown>();
 
-        return (
-          <SyncUIUserComp
-            key={props.head.data.reactCompKey}
-            data={props.head.data.inputData}
-            resolve={props.head.resolve}
-            reject={props.head.reject}
-          />
-        );
-      };
+  // Live registry, resolved at render time. A module that calls makeSyncUI
+  // after <SyncUI /> has mounted (lazy chunk, Vite HMR) simply lands here.
+  const components = new Map<symbol, AnySyncUIComponent>();
 
-      mutSyncUIComponentsRenderQueue.push(SyncUISingletonComponent);
+  // Every mounted <SyncUI /> instance, in mount order. A Set instead of a
+  // boolean or a single ref: a replacement instance can mount before the old
+  // one's cleanup runs (Fast Refresh remounts, a second root, route layouts),
+  // and that overlap must not break anything.
+  const hosts = new Set<object>();
+  const primaryHost = () => hosts.values().next().value;
 
-      return (input: InputData) => {
-        if (!singletonSyncUIRef.push)
-          throw new Error(`You have to initialize <SyncUI />`);
+  let hostEverMounted = false;
+  let warnedNoHost = false;
+  let warnedMultipleHosts = false;
+  let noHostTimer: ReturnType<typeof setTimeout> | undefined;
 
-        const reactCompKey = Math.random().toString();
-        return singletonSyncUIRef.push({
-          type: syncUIComponentType,
-          inputData: input,
-          reactCompKey
-        });
-      };
-    },
-    SyncUI: () => {
-      const queue = usePromiseQueue();
-      return (
-        <>
-          {/* <ThrowIfMoreInstances /> */}
-          {mutSyncUIComponentsRenderQueue.map((SyncComp, key) => (
-            <React.Fragment key={key}>
-              <SyncComp {...queue} />
-            </React.Fragment>
-          ))}
-        </>
+  // Pushing before <SyncUI /> is mounted is a race, not a configuration error
+  // (child effects run before parent effects), so items just wait in the
+  // queue. A silent hang would hide a forgotten <SyncUI />, hence the dev
+  // warning if nothing has mounted after a while.
+  const scheduleNoHostWarning = () => {
+    if (!isDev || hostEverMounted || warnedNoHost || noHostTimer) return;
+    // On the server <SyncUI /> never mounts, so the warning would be noise
+    // and the timer would keep the process alive.
+    if (typeof window === "undefined") return;
+    noHostTimer = setTimeout(() => {
+      noHostTimer = undefined;
+      if (hostEverMounted || store.size() === 0) return;
+      warnedNoHost = true;
+      console.error(
+        "[react-sync-ui] a sync UI has been pending for 3s and no <SyncUI /> " +
+          "is mounted. Render <SyncUI /> once, near the root of your app."
       );
-    }
+    }, 3000);
   };
+
+  const makeSyncUI = <InputData, ResolveValue = void>(
+    Component: SyncUIComponent<InputData, ResolveValue>
+  ) => {
+    const type = Symbol(
+      (Component as { displayName?: string }).displayName ||
+        Component.name ||
+        "SyncUI"
+    );
+    components.set(type, Component as AnySyncUIComponent);
+
+    return (input: InputData): Promise<ResolveValue> => {
+      scheduleNoHostWarning();
+      return store.push(type, input) as Promise<ResolveValue>;
+    };
+  };
+
+  const SyncUI = (): ReactElement | null => {
+    // Stable per-instance identity.
+    const [token] = useState(() => ({}));
+    const [, rerender] = useReducer((n: number) => n + 1, 0);
+
+    // Only the first mounted host renders; the others stay empty so a dialog
+    // is never shown twice. Declared BEFORE the registration effect so React
+    // is subscribed by the time that effect emits.
+    const getSnapshot = useCallback(
+      () => (primaryHost() === token ? store.getHead() : null),
+      [token]
+    );
+    const head = useSyncExternalStore(
+      store.subscribe,
+      getSnapshot,
+      getNullSnapshot
+    );
+
+    useEffect(() => {
+      hosts.add(token);
+      hostEverMounted = true;
+      store.emit();
+      // React 19 <Activity mode="hidden"> disconnects the store subscription
+      // and re-shows with a stale cached snapshot, so emit() alone compares
+      // equal and skips the render. A local state bump cannot be skipped.
+      rerender();
+
+      // Deferred one tick and cleared on cleanup, so the HMR overlap (new
+      // instance mounted, old one not yet unmounted) never false-warns.
+      let warnTimer: ReturnType<typeof setTimeout> | undefined;
+      if (isDev) {
+        warnTimer = setTimeout(() => {
+          if (hosts.size > 1 && !warnedMultipleHosts) {
+            warnedMultipleHosts = true;
+            console.warn(
+              "[react-sync-ui] more than one <SyncUI /> of the same factory " +
+                "is mounted; only the first mounted one renders."
+            );
+          }
+        }, 0);
+      }
+
+      return () => {
+        if (warnTimer !== undefined) clearTimeout(warnTimer);
+        hosts.delete(token);
+        // The queue stays intact; hand over to the next host, if any.
+        store.emit();
+      };
+    }, [token]);
+
+    const Dialog = head ? components.get(head.type) : undefined;
+
+    // Kept out of render so StrictMode cannot log it twice.
+    useEffect(() => {
+      if (isDev && head && !components.get(head.type)) {
+        console.error(
+          "[react-sync-ui] no component registered for the queued item",
+          head.type
+        );
+      }
+    }, [head]);
+
+    const handlers = useMemo(
+      () =>
+        head
+          ? {
+              resolve: (value: unknown) => store.resolveEntry(head, value),
+              reject: (reason?: unknown) => store.rejectEntry(head, reason)
+            }
+          : null,
+      [head]
+    );
+
+    if (!head || !handlers || !Dialog) return null;
+
+    // The key changes per queued item, so two consecutive items of the same
+    // component get a fresh instance (no leaked local state) and a boundary
+    // that caught an error is reset for the next one.
+    // `Dialog` is a registry lookup, not a component created during render;
+    // the lint rule cannot tell the difference.
+    return (
+      <SyncUIErrorBoundary
+        key={head.id}
+        entry={head}
+        onError={(entry, error) => store.rejectEntry(entry, error)}
+      >
+        {/* eslint-disable-next-line react-hooks/static-components */}
+        <Dialog
+          data={head.data}
+          resolve={handlers.resolve}
+          reject={handlers.reject}
+        />
+      </SyncUIErrorBoundary>
+    );
+  };
+
+  return { makeSyncUI, SyncUI };
 };

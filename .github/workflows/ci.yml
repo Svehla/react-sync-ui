@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint / typecheck / test / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint, typecheck, test, build, publint, attw
+        run: npm run check
+
+      - name: Size limit
+        run: npm run size
+
+  # The package supports react ^18 || ^19; the `check` job above pins the
+  # devDependency (19), so run the suite against each supported major.
+  react-compat:
+    name: test (React ${{ matrix.react }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        react: ["18", "19"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --no-save so package.json / the lockfile stay untouched; the job only
+      # needs the swapped React in node_modules for this one run.
+      - name: Install React ${{ matrix.react }}
+        run: |
+          npm i --no-save \
+            react@${{ matrix.react }} \
+            react-dom@${{ matrix.react }} \
+            @types/react@${{ matrix.react }} \
+            @types/react-dom@${{ matrix.react }}
+
+      - name: Show resolved React version
+        run: node -p "require('react/package.json').version"
+
+      - name: Test
+        run: npm test
+
+  example:
+    name: example app (typecheck / build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: example
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: example/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The example aliases `react-sync-ui` to ../src, so this type-checks and
+      # bundles the library source as a real consumer would import it.
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Build
+        run: npx vite build

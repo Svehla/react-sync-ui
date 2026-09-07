@@ -1,6 +1,6 @@
-import * as React from "react";
+import { useState } from "react";
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import { makeSyncUI } from "../../dist";
+import { makeSyncUI } from "react-sync-ui";
 
 export const syncRichPrompt = makeSyncUI<
   {
@@ -12,7 +12,7 @@ export const syncRichPrompt = makeSyncUI<
   },
   string
 >(props => {
-  const [input, setInput] = React.useState("");
+  const [input, setInput] = useState("");
 
   return (
     <Modal

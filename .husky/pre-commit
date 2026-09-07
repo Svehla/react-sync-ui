@@ -1,0 +1,8 @@
+# husky runs this with `sh -e`, so a bare `[ -n "$CI" ] && exit 0` would abort
+# the hook with status 1 whenever $CI is unset. Use an explicit `if`.
+if [ -n "$CI" ]; then
+  # CI already runs lint / typecheck / test as its own jobs.
+  exit 0
+fi
+
+npm run lint && npm run typecheck && npm test -- --run

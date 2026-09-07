@@ -1,3 +1,12 @@
-import { syncUIFactory as _syncUIFactory } from "./syncUI";
-export const syncUIFactory = _syncUIFactory;
+import { syncUIFactory } from "./syncUI.js";
+
+export { syncUIFactory, usePromiseQueue } from "./syncUI.js";
+export type {
+  PromiseQueueAPI,
+  SyncUIComponent,
+  SyncUIFactory,
+  SyncUIFunction,
+  SyncUIProps
+} from "./syncUI.js";
+
 export const { makeSyncUI, SyncUI } = syncUIFactory();

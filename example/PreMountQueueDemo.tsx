@@ -1,63 +1,54 @@
 import { useState } from "react";
-import { Button, Modal, ModalFooter, ModalHeader } from "reactstrap";
-import { syncUIFactory } from "react-sync-ui";
+import source from "./demos/pushBeforeMount.ts?raw";
+import { pushBeforeMount } from "./demos/pushBeforeMount";
+import { lateInstance } from "./lateQueue";
+import { Button } from "./ui/Button";
+import { CodePanel } from "./ui/CodePanel";
+import { Trace } from "./ui/Trace";
 
 /**
- * A queue whose <SyncUI /> is mounted lazily, so we can push into it *before* it
- * exists. Pushing before the mount does not throw any more - the call is queued
- * and rendered as soon as <SyncUI /> shows up.
- *
- * This queue has never had a host, so pushing here and waiting also shows the
- * library's dev-only safety net: after 3s with items pending and no <SyncUI />
- * ever mounted, it logs a console.error telling you to render one.
+ * The queue used here has no `<SyncUI />` until you mount one, which is also
+ * what triggers the library's dev-only safety net: 3s with items pending and no
+ * host ever mounted logs a console.error telling you to render one.
  */
-const lateInstance = syncUIFactory();
-
-const lateAlert = lateInstance.makeSyncUI<string, void>(props => (
-  <Modal isOpen toggle={() => props.resolve()}>
-    <ModalHeader>{props.data}</ModalHeader>
-    <ModalFooter>
-      <Button onClick={() => props.resolve()}>OK</Button>
-    </ModalFooter>
-  </Modal>
-));
-
 export const PreMountQueueDemo = () => {
   const [isMounted, setIsMounted] = useState(false);
-  const [log, setLog] = useState<string[]>([]);
-  const addLog = (line: string) => setLog(prev => [...prev, line]);
+  const [pushCount, setPushCount] = useState(0);
+  const [lines, setLines] = useState<string[]>([]);
+
+  const push = () => {
+    const label = `queued before mount #${pushCount + 1}`;
+    setPushCount(n => n + 1);
+    void pushBeforeMount(line => setLines(prev => [...prev, line]), label);
+  };
 
   return (
-    <section style={{ marginBottom: "3rem" }}>
-      <h2 style={{ fontSize: "1.25rem" }}>
-        Pushing before &lt;SyncUI /&gt; is mounted
-      </h2>
-      <p className="text-muted" style={{ maxWidth: "42rem" }}>
+    <section className="card">
+      <h3 className="card__title">
+        Calling before &lt;SyncUI /&gt; is mounted
+      </h3>
+      <p className="card__intro">
         Push a few alerts while this queue has no <code>&lt;SyncUI /&gt;</code>{" "}
-        rendered. Nothing throws, nothing is lost - mount it and they show up in
-        order. Wait 3s before mounting and the library logs a dev-only
-        console.error reminding you that no <code>&lt;SyncUI /&gt;</code> is
-        mounted.
+        on the page: nothing throws and nothing is lost - mount the host and
+        they show up in order.
       </p>
-      <Button
-        onClick={() => {
-          const message = `queued before mount #${log.length + 1}`;
-          addLog(`pushed: ${message}`);
-          lateAlert(message)
-            .then(() => addLog(`resolved: ${message}`))
-            .catch((error: unknown) => addLog(`rejected: ${String(error)}`));
-        }}
-      >
-        Push into the un-mounted queue
-      </Button>{" "}
-      <Button color="primary" onClick={() => setIsMounted(m => !m)}>
-        {isMounted ? "Unmount" : "Mount"} &lt;SyncUI /&gt;
-      </Button>
-      <ul>
-        {log.map((line, i) => (
-          <li key={i}>{line}</li>
-        ))}
-      </ul>
+
+      <div className="card__actions">
+        <Button primary onClick={push}>
+          Push into the un-mounted queue
+        </Button>
+        <Button onClick={() => setIsMounted(m => !m)}>
+          {isMounted ? "Unmount" : "Mount"} &lt;SyncUI /&gt;
+        </Button>
+      </div>
+
+      <CodePanel fileName="demos/pushBeforeMount.ts" code={source} />
+
+      <Trace
+        lines={lines}
+        hint="Push once or twice, then mount the host and watch them drain."
+      />
+
       {isMounted && <lateInstance.SyncUI />}
     </section>
   );

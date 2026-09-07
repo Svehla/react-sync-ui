@@ -1,5 +1,6 @@
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "react-sync-ui";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 
 export const syncRichConfirm = makeSyncUI<
   {
@@ -10,20 +11,27 @@ export const syncRichConfirm = makeSyncUI<
   },
   boolean
 >(props => (
-  <Modal isOpen={true} toggle={() => props.resolve(false)}>
-    <ModalHeader>{props.data.title}</ModalHeader>
-
-    {props.data.description && <ModalBody>{props.data.description}</ModalBody>}
-
-    <ModalFooter>
-      <Button onClick={() => props.resolve(true)}>
-        {props.data.okBtn ?? "Yes"}
-      </Button>
-      <Button onClick={() => props.resolve(false)}>
-        {props.data.notOkBtn ?? "No"}
-      </Button>
-    </ModalFooter>
-  </Modal>
+  <Dialog
+    title={props.data.title}
+    // closing a confirm without answering is a "no"
+    onClose={() => props.resolve(false)}
+    footer={
+      // The accented answer sits last, on the right. That also makes the
+      // *declining* button the first focusable child, which is what
+      // `showModal()` focuses - so Enter never confirms something destructive
+      // by accident.
+      <>
+        <Button onClick={() => props.resolve(false)}>
+          {props.data.notOkBtn ?? "No"}
+        </Button>
+        <Button primary onClick={() => props.resolve(true)}>
+          {props.data.okBtn ?? "Yes"}
+        </Button>
+      </>
+    }
+  >
+    {props.data.description}
+  </Dialog>
 ));
 
 export const syncConfirm = (title: string) => syncRichConfirm({ title });

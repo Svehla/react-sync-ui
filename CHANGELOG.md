@@ -72,10 +72,10 @@
   development `console.error` is still logged.
 - The dev-only "no `<SyncUI />` is mounted" timer is cleared as soon as a host
   mounts, instead of lingering for the rest of its 3 s.
-- `process.env.NODE_ENV` is read behind a `typeof process` guard, so importing
-  the package without a bundler (native browser ESM, esbuild or Rollup with no
-  `define`) no longer throws `process is not defined`. The check still
-  constant-folds, so a production bundle keeps dropping the dev warnings.
+- Dev-only warnings are gated by a plain `process.env.NODE_ENV` read, the same
+  convention React uses. Bundlers replace it, so the warnings are active in
+  development and dropped from production bundles. Importing the package with
+  no bundler and no `process` global throws at module load, as React does.
 - Item keys use a monotonic counter instead of `Math.random()`.
 - `<SyncUI />` renders only the head item's component instead of one wrapper
   per registered component.
@@ -108,3 +108,4 @@
   `eslint-plugin-react-hooks` v7, Prettier, husky 9 pre-commit hook, size-limit
   13, publint and are-the-types-wrong in `npm run check`.
 - TypeScript 5.9, `jsx: react-jsx` (no `React` default import needed).
+- The example app uses the native `<dialog>` element, no UI framework.

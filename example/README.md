@@ -1,6 +1,7 @@
 # react-sync-ui example
 
-A small Vite + React 19 + reactstrap playground for `react-sync-ui`.
+A small Vite + React 19 playground for `react-sync-ui`. The dialogs are built
+on the native `<dialog>` element plus one small stylesheet - no UI framework.
 
 ```bash
 npm install
@@ -24,20 +25,70 @@ share a single React copy.
 
 ## What is in it
 
-| Demo                                        | File                    | Shows                                                                                                           |
-| ------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Awaiting a dialog like a function call      | `App.tsx`               | `await syncConfirm(...)` inside a plain `async` handler; follow-up dialogs queue instead of stacking            |
-| Looping until the input is right            | `App.tsx`               | a `while` loop around `await syncRichPrompt(...)` - no "is the modal open" state                                |
-| Cancelling: `props.reject` with `try/catch` | `App.tsx`               | closing a prompt calls `props.reject(...)`, the awaited promise rejects, a plain `try/catch` handles it         |
-| Start hacking second queue                  | `secondQueue.tsx`       | a second, independent queue created with `syncUIFactory()`                                                      |
-| Two independent queues at once              | `MultiQueuesApp.tsx`    | two factories draining in parallel while each queue stays FIFO                                                  |
-| Pushing before `<SyncUI />` is mounted      | `PreMountQueueDemo.tsx` | calls made before the queue's `<SyncUI />` mounts are queued, not thrown away (plus the dev-only console error) |
+The page is one column: four everyday **demos**, then an **advanced** section
+with the queue mechanics.
+
+| Demo                                     | Handler                    | Shows                                                                                      |
+| ---------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
+| Confirm before a destructive action      | `demos/confirmDelete.ts`   | `await syncConfirm(...)` returns the answer, so branching on it is a plain `if`            |
+| Ask for a value                          | `demos/askName.ts`         | a prompt resolves with the typed value and _rejects_ on cancel, handled by `try/catch`     |
+| Login with retries                       | `demos/login.ts`           | a `while` loop around an awaited prompt - no "is the modal open" state                     |
+| A small wizard                           | `demos/pickPlan.ts`        | three chained steps (prompt, confirm, alert) read top to bottom                            |
+| Two independent queues _(advanced)_      | `demos/twoQueues.ts`       | two `syncUIFactory()` queues draining in parallel while each stays FIFO                    |
+| Calling before `<SyncUI />` _(advanced)_ | `demos/pushBeforeMount.ts` | calls made before the queue's host mounts are queued, not lost (plus the dev-only warning) |
 
 Every demo is started by a click - nothing fires on mount, on purpose: under
 `<StrictMode>` mount effects run twice in dev and each dialog would be pushed
 twice.
 
-The promisified dialogs live in `syncComponents/`.
+### The demo modules and the code panels
+
+Each handler lives in its own module under `demos/` and contains **no React**:
+just an `async` function that awaits dialogs and calls a `trace(line)` callback
+it is given. The page renders those lines under the demo as they arrive.
+
+The card next to it imports the very same file twice:
+
+```tsx
+import source from "./demos/confirmDelete.ts?raw"; // the text, for the panel
+import { confirmDelete } from "./demos/confirmDelete"; // the function, for the button
+```
+
+Vite's [`?raw`](https://vite.dev/guide/assets#importing-asset-as-string) suffix
+gives back the file as a string, so the code you read on the page is always the
+code the button runs. `vite-env.d.ts` declares that module suffix for TypeScript
+(the example pins `types` to `["node"]`, so `vite/client` is not pulled in).
+
+`ui/CodePanel.tsx` colours that string with
+[`prism-react-renderer`](https://github.com/FormidableLabs/prism-react-renderer)
+(the `tsx` grammar and the GitHub light theme) - the example's only runtime
+dependency besides React, and it only wraps characters in spans, so the panel
+text and the Copy button still hand back the file verbatim.
+
+### The dialogs
+
+The promisified dialogs live in `syncComponents/`. They are composed from
+`ui/Dialog.tsx` (a small wrapper around the native `<dialog>` element) and
+`ui/Button.tsx`; `ui/DemoCard.tsx`, `ui/CodePanel.tsx` and `ui/Trace.tsx` are
+the page furniture, and the whole look is `styles.css` - one light palette,
+pinned with `color-scheme: light` so the native `<dialog>` and its form controls
+stay light whatever the OS is set to.
+
+`ui/Dialog.tsx` opens itself in an effect on mount and closes on unmount. It
+defaults to `showModal()`, which gives you a real `::backdrop` and native close
+requests (Escape fires `cancel`) - but also makes the rest of the page inert, so
+only one modal dialog can be interacted with at a time. The two-queue demo needs
+two dialogs clickable side by side, so it passes `modal={false}` and gets
+`show()` instead.
+
+Every dialog has a `x` close button in its header (the same thing Escape and a
+backdrop click do): on an alert it resolves like `OK`, on a confirm it answers
+`No`, and on a prompt it calls `props.reject(...)` - the same as the prompt's
+`Cancel` button - so the caller's `try/catch` runs.
+
+In a confirm the accented answer sits **last**, on the right. That also makes
+the declining button the first focusable child, which is what `showModal()`
+focuses, so Enter never confirms a destructive action by accident.
 
 ## Fast Refresh
 
@@ -55,15 +106,15 @@ So the example is split along that rule:
   `createRoot` on the same container logs
   _"You are calling ReactDOMClient.createRoot() on a container that has already
   been passed to createRoot()"_).
-- `App.tsx`, `MultiQueuesApp.tsx` and `PreMountQueueDemo.tsx` export **only**
-  components, so they are boundaries and absorb the update.
-- The queue factories and the dialogs built from them live in their own
-  modules - `secondQueue.tsx`, `multiQueues.tsx`, `syncComponents/*`. These are
-  not boundaries themselves (they export functions and objects, not components);
-  their edits propagate one level up to the component file that imports them,
-  which _is_ a boundary. Keeping the factories out of the component files also
-  means a hot update never re-runs `syncUIFactory()` and never mounts a second
-  `<SyncUI />` for the same queue.
+- `App.tsx`, `MultiQueuesApp.tsx`, `PreMountQueueDemo.tsx` and the `ui/*` files
+  export **only** components, so they are boundaries and absorb the update.
+- The queue factories, the dialogs built from them and the demo handlers live in
+  their own modules - `multiQueues.tsx`, `lateQueue.tsx`, `syncComponents/*`,
+  `demos/*`. These are not boundaries themselves (they export functions and
+  objects, not components); their edits propagate one level up to the component
+  file that imports them, which _is_ a boundary. Keeping the factories out of
+  the component files also means a hot update never re-runs `syncUIFactory()`
+  and never mounts a second `<SyncUI />` for the same queue.
 
 Editing `syncComponents/SyncConfirm.tsx` with a dialog open should log
 `[vite] hot updated: /App.tsx` and leave the dialog on screen. If you instead

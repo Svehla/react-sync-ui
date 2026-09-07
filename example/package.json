@@ -12,10 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "bootstrap": "^5.3.8",
+    "prism-react-renderer": "^2.4.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "reactstrap": "^9.2.3"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

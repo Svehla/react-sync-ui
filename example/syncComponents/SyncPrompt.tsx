@@ -1,27 +1,26 @@
 import { useState } from "react";
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "react-sync-ui";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 
 export const syncRichPrompt = makeSyncUI<
   {
     title: string;
     description?: string;
     inputLabel?: string;
-    canUserReject?: boolean;
     inputType?: "password" | "text";
   },
   string
 >(props => {
   const [input, setInput] = useState("");
 
+  // A prompt has no neutral answer, so closing it - with Cancel, the x, Escape
+  // or a backdrop click - rejects the awaited promise. Every caller therefore
+  // has to handle a cancel, which is exactly the point of the demo.
+  const close = () => props.reject(new Error("User closed the prompt"));
+
   return (
-    <Modal
-      isOpen={true}
-      toggle={() => {
-        if (!props.data.canUserReject) return;
-        props.reject(new Error("User forced close prompt modal"));
-      }}
-    >
+    <Dialog title={props.data.title} onClose={close}>
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -29,30 +28,29 @@ export const syncRichPrompt = makeSyncUI<
           props.resolve(input);
         }}
       >
-        <ModalHeader>{props.data.title}</ModalHeader>
-
         {props.data.description && (
-          <ModalBody>{props.data.description}</ModalBody>
+          <p className="dialog__description">{props.data.description}</p>
         )}
 
-        <ModalBody>
-          <label>
-            {props.data.inputLabel}
+        <label>
+          {props.data.inputLabel}
 
-            <input
-              autoFocus
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              type={props.data.inputType ?? "text"}
-            />
-          </label>
-        </ModalBody>
+          <input
+            autoFocus
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            type={props.data.inputType ?? "text"}
+          />
+        </label>
 
-        <ModalFooter>
-          <Button type="submit">Accept</Button>
-        </ModalFooter>
+        <div className="dialog__footer">
+          <Button onClick={close}>Cancel</Button>
+          <Button primary type="submit">
+            Accept
+          </Button>
+        </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 });
 

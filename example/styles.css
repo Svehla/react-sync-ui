@@ -1,0 +1,422 @@
+/* The whole look of the example: no CSS framework, one file, one light palette. */
+
+:root {
+  /* light only, whatever the OS is set to: this also pins the native
+     <dialog>, its ::backdrop and the form controls inside it to light, since
+     the UA styles those from color-scheme rather than from our variables */
+  color-scheme: light;
+
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --sunken: #f3f5f8;
+  --fg: #16202e;
+  --muted: #5b6875;
+  --border: #e2e6ec;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #e8efff;
+  --on-accent: #ffffff;
+  --shadow: 0 1px 2px rgb(15 32 46 / 6%);
+  --shadow-lg: 0 16px 48px rgb(15 32 46 / 20%);
+  --radius: 12px;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* page layout --------------------------------------------------------- */
+
+.page {
+  max-width: 47.5rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem 5rem;
+}
+
+.hero {
+  margin-bottom: 2.75rem;
+}
+
+.hero__title {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+}
+
+.hero__tagline {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+}
+
+.hero__links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+}
+
+.section__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.section__intro {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 3rem 0 2rem;
+}
+
+.footer {
+  margin-top: 3rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* demo card ----------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.35rem 1.35rem;
+  margin-bottom: 1rem;
+}
+
+.card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.card__intro {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* code panel ---------------------------------------------------------- */
+
+.code {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.code__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.code__file {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.code__copy {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.code__copy:hover {
+  border-color: var(--border);
+  color: var(--fg);
+}
+
+.code__copy:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.code__pre {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  /* the highlighter only colours the text; the block keeps the panel's own
+     surface, so the bar and the code read as one card */
+  background: var(--sunken);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.code__pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* one span per source line, only there to hang a newline off - it must not add
+   any box of its own, or the panel text would stop matching the file */
+.code__line {
+  display: inline;
+}
+
+/* trace --------------------------------------------------------------- */
+
+.trace {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--border);
+}
+
+.trace__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.trace__empty {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.trace__list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.35rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.trace__list li::marker {
+  color: var(--muted);
+}
+
+/* buttons ------------------------------------------------------------- */
+
+.btn {
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--muted);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* native <dialog> ----------------------------------------------------- */
+
+.dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--border);
+  /* the one bit of colour on a dialog, so it reads as "this is the app talking" */
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* No transition on purpose: the dialog is where it is the moment it opens,
+   so a click that lands right after a swap can never hit a moving target. */
+.dialog::backdrop {
+  background: rgb(15 32 46 / 45%);
+}
+
+/* non-modal (`show()`) dialogs: normal page content, so two of them coexist.
+   The UA stylesheet sets BOTH inset-inline-start and inset-inline-end to 0 on
+   <dialog>; leaving them in place over-constrains the box and the modifiers
+   below would silently lose to `left: 0`. */
+.dialog--inline {
+  position: fixed;
+  top: 5rem;
+  left: auto;
+  right: auto;
+  margin: 0;
+  z-index: 10;
+  width: min(21rem, calc(50vw - 3rem));
+}
+
+.dialog--left {
+  left: 2rem;
+}
+
+.dialog--right {
+  right: 2rem;
+}
+
+.dialog__box {
+  position: relative;
+  padding: 1.15rem 1.35rem 1.35rem;
+}
+
+.dialog__title {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+/* room for the x sitting in the corner */
+.dialog__box--closable .dialog__title {
+  padding-right: 2rem;
+}
+
+/* The x of every closable dialog: painted in the top-right corner, but the last
+   child in the DOM, so it is the last stop in the tab order instead of the
+   first. A borderless icon button with a real focus ring. */
+.close-btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: var(--sunken);
+  border-color: var(--border);
+  color: var(--fg);
+}
+
+.close-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dialog__body {
+  margin-top: 0.6rem;
+}
+
+.dialog__description {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+}
+
+.dialog__body label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dialog__body input {
+  font: inherit;
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+/* right-aligned, accented answer last */
+.dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}

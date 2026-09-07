@@ -11,18 +11,15 @@ import {
 import type { ComponentType, ErrorInfo, ReactElement, ReactNode } from "react";
 
 // The library build leaves `process.env.NODE_ENV` untouched on purpose so the
-// consumer's bundler decides. The `typeof` guard keeps an unbundled import
-// (native browser ESM, esbuild/Rollup with no `define`) from throwing
-// `process is not defined` at module scope; the ternary keeps the expression
-// foldable, because after a `define` both branches are constants and the
-// minifier collapses the whole thing to `false`, taking the dev warnings with
-// it. The shorter `typeof process !== "undefined" && ...` form does NOT fold:
-// `typeof process < "u" && !1` survives, and so do the warning strings.
+// consumer's bundler decides, exactly like React itself. It has to stay a
+// bare read: a `typeof process` guard is NOT replaced by bundlers, and a
+// browser has no `process`, so the guard would silently disable every dev
+// warning under Vite or webpack dev. Wrapping it in an IIFE or try/catch
+// stops the minifier from folding it, and the warning strings would ship to
+// production. The trade-off is the same one React makes: importing the
+// package with no bundler and no `process` global throws at module scope.
 declare const process: { env: { NODE_ENV?: string } };
-const isDev =
-  typeof process === "undefined"
-    ? false
-    : process.env.NODE_ENV !== "production";
+const isDev = process.env.NODE_ENV !== "production";
 
 // ------------------------------------------------------------------------------------
 // public types

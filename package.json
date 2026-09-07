@@ -1,6 +1,6 @@
 {
   "name": "react-sync-ui",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Promise-based imperative React UI: await an alert, confirm or prompt like a function call.",
   "repository": {
     "type": "git",

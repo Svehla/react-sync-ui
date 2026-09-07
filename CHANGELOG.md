@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.1
+
+### Internal
+
+- Dev dependencies bumped to latest: TypeScript 6.0.3 (last release with the
+  JavaScript compiler API; TypeScript 7 is blocked until `typescript-eslint`
+  supports it, see typescript-eslint/typescript-eslint#10940), Vitest 5,
+  ESLint 10.10, `@types/react-dom` 19.2.7. No change to the published
+  package.
+- Example app moved to TypeScript 7 (native `tsc`): dropped the removed
+  `baseUrl` option and referenced `vite/client` types instead of a
+  hand-written `?raw` declaration.
+
 ## 2.0.0
 
 ### Breaking changes

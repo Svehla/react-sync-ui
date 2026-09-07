@@ -1,5 +1,6 @@
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "react-sync-ui";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 
 export const syncRichConfirm = makeSyncUI<
   {
@@ -10,20 +11,23 @@ export const syncRichConfirm = makeSyncUI<
   },
   boolean
 >(props => (
-  <Modal isOpen={true} toggle={() => props.resolve(false)}>
-    <ModalHeader>{props.data.title}</ModalHeader>
-
-    {props.data.description && <ModalBody>{props.data.description}</ModalBody>}
-
-    <ModalFooter>
-      <Button onClick={() => props.resolve(true)}>
-        {props.data.okBtn ?? "Yes"}
-      </Button>
-      <Button onClick={() => props.resolve(false)}>
-        {props.data.notOkBtn ?? "No"}
-      </Button>
-    </ModalFooter>
-  </Modal>
+  <Dialog
+    title={props.data.title}
+    onCancel={() => props.resolve(false)}
+    onBackdropClick={() => props.resolve(false)}
+    footer={
+      <>
+        <Button onClick={() => props.resolve(true)}>
+          {props.data.okBtn ?? "Yes"}
+        </Button>
+        <Button onClick={() => props.resolve(false)}>
+          {props.data.notOkBtn ?? "No"}
+        </Button>
+      </>
+    }
+  >
+    {props.data.description}
+  </Dialog>
 ));
 
 export const syncConfirm = (title: string) => syncRichConfirm({ title });

@@ -1,10 +1,10 @@
-import { Button } from "reactstrap";
 import {
   syncAlertQueue1,
   syncAlertQueue2,
   syncUI1,
   syncUI2
 } from "./multiQueues";
+import { Button } from "./ui/Button";
 
 /**
  * Two independent queues drain in parallel: you see one dialog per queue at the
@@ -30,17 +30,19 @@ export const MultiQueuesApp = () => {
   };
 
   return (
-    <section style={{ marginBottom: "3rem" }}>
-      <h2 style={{ fontSize: "1.25rem" }}>Two independent queues at once</h2>
-      <p className="text-muted" style={{ maxWidth: "42rem" }}>
+    <section className="demo">
+      <h2>Two independent queues at once</h2>
+      <p className="muted">
         Each <code>syncUIFactory()</code> owns its own queue. The click below
         pushes two alerts into each queue with a single <code>Promise.all</code>
-        : you get one modal per queue on screen at the same time, while{" "}
+        : you get one dialog per queue on screen at the same time, while{" "}
         <code>q-1-1</code> still comes before <code>q-1-2</code>. Resolve all
-        four and a final &quot;done&quot; alert follows.
+        four and a final &quot;done&quot; alert follows. Both dialogs are
+        non-modal <code>&lt;dialog&gt;</code> panels - a modal one would make
+        the other queue&apos;s dialog inert.
       </p>
 
-      <Button color="primary" onClick={runBothQueues}>
+      <Button primary onClick={runBothQueues}>
         Run two queues at once
       </Button>
 

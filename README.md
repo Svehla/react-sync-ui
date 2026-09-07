@@ -132,33 +132,43 @@ first-mounted one renders and a warning is logged in development.
 ### Alert
 
 ```tsx
-import { Button, Modal, ModalFooter, ModalHeader } from "reactstrap";
+import { useEffect, useRef } from "react";
 import { makeSyncUI } from "react-sync-ui";
 
-export const syncAlert = makeSyncUI<string, void>(props => (
-  <Modal isOpen toggle={() => props.resolve()}>
-    <ModalHeader>{props.data}</ModalHeader>
-    <ModalFooter>
-      <Button onClick={() => props.resolve()}>OK</Button>
-    </ModalFooter>
-  </Modal>
-));
+export const syncAlert = makeSyncUI<string, void>(props => {
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    ref.current?.showModal();
+  }, []);
+
+  return (
+    <dialog ref={ref} onCancel={() => props.resolve()}>
+      <h2>{props.data}</h2>
+      <button onClick={() => props.resolve()}>OK</button>
+    </dialog>
+  );
+});
 ```
 
 ### Prompt
 
 ```tsx
-import { useState } from "react";
-import { Button, Modal, ModalBody, ModalFooter } from "reactstrap";
+import { useEffect, useRef, useState } from "react";
 import { makeSyncUI } from "react-sync-ui";
 
 export const syncPrompt = makeSyncUI<string, string>(props => {
+  const ref = useRef<HTMLDialogElement>(null);
   const [input, setInput] = useState("");
 
+  useEffect(() => {
+    ref.current?.showModal();
+  }, []);
+
   return (
-    <Modal
-      isOpen
-      toggle={() => props.reject(new Error("User closed the prompt"))}
+    <dialog
+      ref={ref}
+      onCancel={() => props.reject(new Error("User closed the prompt"))}
     >
       <form
         onSubmit={e => {
@@ -166,26 +176,22 @@ export const syncPrompt = makeSyncUI<string, string>(props => {
           props.resolve(input);
         }}
       >
-        <ModalBody>
-          <label>
-            {props.data}
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-            />
-          </label>
-        </ModalBody>
+        <label>
+          {props.data}
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+          />
+        </label>
 
-        <ModalFooter>
-          <Button type="submit">Accept</Button>
-        </ModalFooter>
+        <button type="submit">Accept</button>
       </form>
-    </Modal>
+    </dialog>
   );
 });
 
-// usage: this component rejects when the user closes the modal, so catch it
+// usage: this component rejects when the user closes the dialog, so catch it
 
 <button
   onClick={async () => {
@@ -203,7 +209,7 @@ export const syncPrompt = makeSyncUI<string, string>(props => {
 ### Confirm
 
 ```tsx
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
+import { useEffect, useRef } from "react";
 import { makeSyncUI } from "react-sync-ui";
 
 type ConfirmData = {
@@ -213,20 +219,26 @@ type ConfirmData = {
   notOkBtn?: string;
 };
 
-export const syncRichConfirm = makeSyncUI<ConfirmData, boolean>(props => (
-  <Modal isOpen toggle={() => props.resolve(false)}>
-    <ModalHeader>{props.data.title}</ModalHeader>
-    <ModalBody>{props.data.description}</ModalBody>
-    <ModalFooter>
-      <Button autoFocus onClick={() => props.resolve(true)}>
+export const syncRichConfirm = makeSyncUI<ConfirmData, boolean>(props => {
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    ref.current?.showModal();
+  }, []);
+
+  return (
+    <dialog ref={ref} onCancel={() => props.resolve(false)}>
+      <h2>{props.data.title}</h2>
+      <p>{props.data.description}</p>
+      <button autoFocus onClick={() => props.resolve(true)}>
         {props.data.okBtn ?? "Yes"}
-      </Button>
-      <Button onClick={() => props.resolve(false)}>
+      </button>
+      <button onClick={() => props.resolve(false)}>
         {props.data.notOkBtn ?? "No"}
-      </Button>
-    </ModalFooter>
-  </Modal>
-));
+      </button>
+    </dialog>
+  );
+});
 
 // a thin positional wrapper for the common call site
 export const syncConfirm = (title: string) => syncRichConfirm({ title });
@@ -412,11 +424,12 @@ the library, so drive dialogs from event handlers.
 **What if I call a sync function before `<SyncUI />` is mounted?** The item waits in the queue and is shown
 as soon as `<SyncUI />` mounts. If nothing ever mounts you get a dev-only console error.
 
-**Can I load it without a bundler?** Yes. Like React itself the library reads `process.env.NODE_ENV` at
-module load to decide whether to log its dev warnings, but the read is guarded by `typeof process`, so
-importing `dist/index.js` straight into a browser works — you just get the production behaviour (no dev
-warnings). With a bundler, or a `define`, the check constant-folds and the warnings are dropped from
-production builds entirely.
+**Can I load it without a bundler?** Not directly, for the same reason as React itself: the library
+reads `process.env.NODE_ENV` at module load to decide whether to log its dev warnings. Any bundler
+(Vite, webpack, esbuild, Rollup with a `define`) replaces that read, keeps the warnings in development
+and drops them from production builds entirely. Importing `dist/index.js` straight into a browser with
+no `process` global throws `process is not defined`; define `globalThis.process = { env: {} }` first if
+you really need that.
 
 **How do I test a sync UI?** Await the query rather than the render: click the trigger, then
 `await screen.findByRole("button", { name: "Yes" })` and click it. `findByRole` waits for the dialog to

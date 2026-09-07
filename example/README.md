@@ -1,6 +1,7 @@
 # react-sync-ui example
 
-A small Vite + React 19 + reactstrap playground for `react-sync-ui`.
+A small Vite + React 19 playground for `react-sync-ui`. The dialogs are built
+on the native `<dialog>` element plus one small stylesheet - no UI framework.
 
 ```bash
 npm install
@@ -37,7 +38,17 @@ Every demo is started by a click - nothing fires on mount, on purpose: under
 `<StrictMode>` mount effects run twice in dev and each dialog would be pushed
 twice.
 
-The promisified dialogs live in `syncComponents/`.
+The promisified dialogs live in `syncComponents/`. They are composed from
+`ui/Dialog.tsx` (a ~55 line wrapper around the native `<dialog>` element) and
+`ui/Button.tsx`; the whole look of the page is `styles.css`.
+
+`ui/Dialog.tsx` opens itself in an effect on mount and closes on unmount. It
+defaults to `showModal()`, which gives you a real `::backdrop` and native close
+requests (Escape fires `cancel`) - but also makes the rest of the page inert, so
+only one modal dialog can be interacted with at a time. The two-queue demos need
+two dialogs clickable side by side, so they pass `modal={false}` and get
+`show()` instead; the second-queue demo goes one step further and renders a
+plain fixed panel.
 
 ## Fast Refresh
 
@@ -55,8 +66,8 @@ So the example is split along that rule:
   `createRoot` on the same container logs
   _"You are calling ReactDOMClient.createRoot() on a container that has already
   been passed to createRoot()"_).
-- `App.tsx`, `MultiQueuesApp.tsx` and `PreMountQueueDemo.tsx` export **only**
-  components, so they are boundaries and absorb the update.
+- `App.tsx`, `MultiQueuesApp.tsx`, `PreMountQueueDemo.tsx` and the `ui/*` files
+  export **only** components, so they are boundaries and absorb the update.
 - The queue factories and the dialogs built from them live in their own
   modules - `secondQueue.tsx`, `multiQueues.tsx`, `syncComponents/*`. These are
   not boundaries themselves (they export functions and objects, not components);

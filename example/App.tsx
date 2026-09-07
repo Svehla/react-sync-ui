@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Button, Container } from "reactstrap";
 import { SyncUI } from "react-sync-ui";
 import { MultiQueuesApp } from "./MultiQueuesApp";
 import { PreMountQueueDemo } from "./PreMountQueueDemo";
@@ -8,6 +7,7 @@ import { alert2, secondInstance } from "./secondQueue";
 import { syncAlert } from "./syncComponents/SyncAlert";
 import { syncConfirm, syncRichConfirm } from "./syncComponents/SyncConfirm";
 import { syncPrompt, syncRichPrompt } from "./syncComponents/SyncPrompt";
+import { Button } from "./ui/Button";
 
 const delay = (time: number) => new Promise(res => setTimeout(res, time));
 
@@ -17,11 +17,9 @@ const Demo = (props: {
   children: ReactNode;
   description: ReactNode;
 }) => (
-  <section style={{ marginBottom: "3rem" }}>
-    <h2 style={{ fontSize: "1.25rem" }}>{props.title}</h2>
-    <p className="text-muted" style={{ maxWidth: "42rem" }}>
-      {props.description}
-    </p>
+  <section className="demo">
+    <h2>{props.title}</h2>
+    <p className="muted">{props.description}</p>
     {props.children}
   </section>
 );
@@ -78,14 +76,14 @@ export const App = () => {
   };
 
   return (
-    <Container style={{ paddingTop: "3rem", paddingBottom: "6rem" }}>
+    <main className="container">
       {/* the default queue */}
       <SyncUI />
       {/* an independent, second queue */}
       <secondInstance.SyncUI />
 
       <h1>react-sync-ui playground</h1>
-      <p className="text-muted" style={{ maxWidth: "42rem" }}>
+      <p className="muted">
         Every dialog below is a normal React component turned into an awaitable
         function by <code>makeSyncUI</code>. Nothing opens on page load - each
         demo starts from a click, so the control flow you read in the handler is
@@ -169,7 +167,7 @@ export const App = () => {
           </>
         }
       >
-        <Button onClick={startHacking} color="primary">
+        <Button primary onClick={startHacking}>
           Start Hacking
         </Button>{" "}
         <Button
@@ -182,7 +180,7 @@ export const App = () => {
           Start hacking second queue
         </Button>
         {lastRejection && (
-          <p className="text-danger" style={{ marginTop: "0.75rem" }}>
+          <p className="danger">
             caught in <code>catch</code>: {lastRejection}
           </p>
         )}
@@ -191,6 +189,6 @@ export const App = () => {
       <MultiQueuesApp />
 
       <PreMountQueueDemo />
-    </Container>
+    </main>
   );
 };

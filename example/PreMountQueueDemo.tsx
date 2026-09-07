@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Button, Modal, ModalFooter, ModalHeader } from "reactstrap";
 import { syncUIFactory } from "react-sync-ui";
+import { Button } from "./ui/Button";
+import { Dialog } from "./ui/Dialog";
 
 /**
  * A queue whose <SyncUI /> is mounted lazily, so we can push into it *before* it
@@ -14,12 +15,12 @@ import { syncUIFactory } from "react-sync-ui";
 const lateInstance = syncUIFactory();
 
 const lateAlert = lateInstance.makeSyncUI<string, void>(props => (
-  <Modal isOpen toggle={() => props.resolve()}>
-    <ModalHeader>{props.data}</ModalHeader>
-    <ModalFooter>
-      <Button onClick={() => props.resolve()}>OK</Button>
-    </ModalFooter>
-  </Modal>
+  <Dialog
+    title={props.data}
+    onCancel={() => props.resolve()}
+    onBackdropClick={() => props.resolve()}
+    footer={<Button onClick={() => props.resolve()}>OK</Button>}
+  />
 ));
 
 export const PreMountQueueDemo = () => {
@@ -28,11 +29,9 @@ export const PreMountQueueDemo = () => {
   const addLog = (line: string) => setLog(prev => [...prev, line]);
 
   return (
-    <section style={{ marginBottom: "3rem" }}>
-      <h2 style={{ fontSize: "1.25rem" }}>
-        Pushing before &lt;SyncUI /&gt; is mounted
-      </h2>
-      <p className="text-muted" style={{ maxWidth: "42rem" }}>
+    <section className="demo">
+      <h2>Pushing before &lt;SyncUI /&gt; is mounted</h2>
+      <p className="muted">
         Push a few alerts while this queue has no <code>&lt;SyncUI /&gt;</code>{" "}
         rendered. Nothing throws, nothing is lost - mount it and they show up in
         order. Wait 3s before mounting and the library logs a dev-only
@@ -50,10 +49,10 @@ export const PreMountQueueDemo = () => {
       >
         Push into the un-mounted queue
       </Button>{" "}
-      <Button color="primary" onClick={() => setIsMounted(m => !m)}>
+      <Button primary onClick={() => setIsMounted(m => !m)}>
         {isMounted ? "Unmount" : "Mount"} &lt;SyncUI /&gt;
       </Button>
-      <ul>
+      <ul className="log">
         {log.map((line, i) => (
           <li key={i}>{line}</li>
         ))}

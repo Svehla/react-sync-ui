@@ -35,6 +35,7 @@
     "PreMountQueueDemo.tsx",
     "secondQueue.tsx",
     "syncComponents",
+    "ui",
     "vite.config.ts"
   ]
 }

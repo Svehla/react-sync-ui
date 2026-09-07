@@ -1,0 +1,204 @@
+/* The whole look of the example: no CSS framework, ~120 lines. */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --fg: #16202e;
+  --muted: #64748b;
+  --danger: #b91c1c;
+  --accent: #2563eb;
+  --border: #dde3ea;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: #eef1f5;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+.container {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+.muted {
+  color: var(--muted);
+  max-width: 42rem;
+}
+
+.danger {
+  color: var(--danger);
+  margin-top: 0.75rem;
+}
+
+.demo {
+  margin-bottom: 3rem;
+}
+
+.demo h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.log {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* buttons ------------------------------------------------------------- */
+
+.btn {
+  font: inherit;
+  line-height: 1.2;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #f1f4f8;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: #1d4ed8;
+}
+
+/* native <dialog> ----------------------------------------------------- */
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 12px 40px rgb(15 32 46 / 18%);
+}
+
+/* No transition on purpose: the dialog is where it is the moment it opens,
+   so a click that lands right after a swap can never hit a moving target. */
+.dialog::backdrop {
+  background: rgb(15 32 46 / 40%);
+}
+
+/* non-modal (`show()`) dialogs: normal page content, so two of them coexist.
+   The UA stylesheet sets BOTH inset-inline-start and inset-inline-end to 0 on
+   <dialog>; leaving them in place over-constrains the box and the modifiers
+   below would silently lose to `left: 0`. */
+.dialog--inline {
+  position: fixed;
+  top: 5rem;
+  left: auto;
+  right: auto;
+  margin: 0;
+  z-index: 10;
+  width: min(22rem, calc(50vw - 3rem));
+}
+
+.dialog--left {
+  left: 2rem;
+}
+
+.dialog--right {
+  right: 2rem;
+}
+
+.dialog__box {
+  padding: 1.25rem 1.5rem;
+}
+
+.dialog__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dialog__body {
+  margin-top: 0.75rem;
+}
+
+.dialog__body label {
+  display: block;
+}
+
+.dialog__body input {
+  font: inherit;
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+/* the second queue renders a plain fixed panel instead of a <dialog>, to make
+   it obvious that it is driven by a different queue than the modals */
+.panel {
+  position: fixed;
+  top: 100px;
+  left: 100px;
+  width: 400px;
+  padding: 1rem 1.25rem;
+  z-index: 20;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgb(15 32 46 / 18%);
+}
+
+.panel h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import { makeSyncUI } from "react-sync-ui";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 
 export const syncRichPrompt = makeSyncUI<
   {
@@ -14,14 +15,15 @@ export const syncRichPrompt = makeSyncUI<
 >(props => {
   const [input, setInput] = useState("");
 
+  // Escape and a backdrop click are the two ways to "close" a native modal
+  // dialog; both reject, but only when the caller opted into it.
+  const close = () => {
+    if (!props.data.canUserReject) return;
+    props.reject(new Error("User forced close prompt modal"));
+  };
+
   return (
-    <Modal
-      isOpen={true}
-      toggle={() => {
-        if (!props.data.canUserReject) return;
-        props.reject(new Error("User forced close prompt modal"));
-      }}
-    >
+    <Dialog title={props.data.title} onCancel={close} onBackdropClick={close}>
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -29,30 +31,24 @@ export const syncRichPrompt = makeSyncUI<
           props.resolve(input);
         }}
       >
-        <ModalHeader>{props.data.title}</ModalHeader>
+        {props.data.description && <p>{props.data.description}</p>}
 
-        {props.data.description && (
-          <ModalBody>{props.data.description}</ModalBody>
-        )}
+        <label>
+          {props.data.inputLabel}
 
-        <ModalBody>
-          <label>
-            {props.data.inputLabel}
+          <input
+            autoFocus
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            type={props.data.inputType ?? "text"}
+          />
+        </label>
 
-            <input
-              autoFocus
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              type={props.data.inputType ?? "text"}
-            />
-          </label>
-        </ModalBody>
-
-        <ModalFooter>
+        <div className="dialog__footer">
           <Button type="submit">Accept</Button>
-        </ModalFooter>
+        </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 });
 

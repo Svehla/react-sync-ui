@@ -237,6 +237,29 @@ describe("StrictMode", () => {
     expect(onCatch.mock.calls[0]?.[0]).toBeInstanceOf(Error);
   });
 
+  it("usePromiseQueue: the simulated unmount does not drain pending items", async () => {
+    const pushed: Tracked<void>[] = [];
+    const Owner = () => {
+      const { head, push } = usePromiseQueue<string>();
+      // StrictMode replays mount/unmount/mount synchronously, so this push
+      // lands between the simulated unmount and the remount: exactly the
+      // window in which an eager unmount drain would reject it.
+      useEffect(() => {
+        pushed.push(track(push("from a mount effect")));
+      }, [push]);
+      return <span>{head?.data ?? "empty"}</span>;
+    };
+
+    render(<Owner />, { reactStrictMode: true });
+    await flushMicrotasks();
+
+    expect(pushed.length).toBeGreaterThan(0);
+    expect(pushed.map(item => item.state())).toEqual(
+      pushed.map(() => "pending")
+    );
+    expect(screen.getByText("from a mount effect")).toBeInTheDocument();
+  });
+
   it("usePromiseQueue: the hook's store is allocated once per instance", async () => {
     const effects = vi.fn();
     const { result } = renderHook(

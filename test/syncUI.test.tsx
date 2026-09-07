@@ -1,8 +1,8 @@
-import { act, useState } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, useEffect, useState } from "react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { syncUIFactory } from "../src/syncUI";
-import type { SyncUIFactory } from "../src/syncUI";
+import type { SyncUIComponent, SyncUIFactory } from "../src/syncUI";
 import {
   makeSyncUI as defaultMakeSyncUI,
   SyncUI as DefaultSyncUI
@@ -726,6 +726,74 @@ describe.each(modes)("syncUIFactory scenarios ($name)", ({ strict }) => {
     await expect(tracked.promise).resolves.toBeUndefined();
   });
 
+  it("S19c the FIRST mounted host is the one that renders", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const user = userEvent.setup();
+    const factory = syncUIFactory();
+    const syncAlert = makeAlert(factory);
+
+    renderWithStrict(
+      <>
+        <div data-testid="first">
+          <factory.SyncUI />
+        </div>
+        <div data-testid="second">
+          <factory.SyncUI />
+        </div>
+      </>,
+      strict
+    );
+
+    let tracked!: Tracked<void>;
+    await act(async () => {
+      tracked = track(syncAlert("x"));
+    });
+
+    expect(
+      within(screen.getByTestId("first")).getByRole("button", { name: "x" })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("second")).queryByRole("button")
+    ).toBeNull();
+
+    await user.click(button("x"));
+    await expect(tracked.promise).resolves.toBeUndefined();
+  });
+
+  it("S19d a dialog that resolves from its mount effect advances the queue", async () => {
+    const user = userEvent.setup();
+    const factory = syncUIFactory();
+    const syncAlert = makeAlert(factory);
+    // Auto-dismiss: the settlement happens inside React's commit phase, not
+    // in an event handler or an async continuation.
+    const autoClose = factory.makeSyncUI<string, void>(function AutoClose({
+      data,
+      resolve
+    }) {
+      useEffect(() => {
+        resolve();
+      }, [resolve]);
+      return <button>{data}</button>;
+    });
+    renderWithStrict(<factory.SyncUI />, strict);
+
+    let auto!: Tracked<void>;
+    let next!: Tracked<void>;
+    await act(async () => {
+      auto = track(autoClose("auto"));
+      next = track(syncAlert("next"));
+    });
+    await flushMicrotasks();
+
+    expect(auto.state()).toBe("fulfilled");
+    expect(queryButton("auto")).not.toBeInTheDocument();
+    expect(await findButton("next")).toBeInTheDocument();
+
+    await user.click(button("next"));
+    await flushMicrotasks();
+    expect(next.state()).toBe("fulfilled");
+  });
+
   it("S20 makeSyncUI after <SyncUI /> mounted (late registration) works immediately", async () => {
     const user = userEvent.setup();
     const factory = syncUIFactory();
@@ -894,9 +962,14 @@ describe("dev warnings", () => {
     const syncAlert = makeAlert(factory);
 
     const tracked = track(syncAlert("a"));
+    expect(vi.getTimerCount()).toBe(1);
     vi.advanceTimersByTime(1000);
     render(<factory.SyncUI />);
+    // The 3s no-host handle is cleared the moment a host mounts; the only
+    // timer left is the dev multiple-host check (a setTimeout(0)).
+    expect(vi.getTimerCount()).toBe(1);
     vi.advanceTimersByTime(10_000);
+    expect(vi.getTimerCount()).toBe(0);
 
     expect(error).not.toHaveBeenCalled();
     fireEvent.click(button("a"));
@@ -1031,6 +1104,20 @@ describe("dev warnings", () => {
     fireEvent.click(button("a"));
     await flushMicrotasks();
     expect(tracked.state()).toBe("fulfilled");
+
+    // an entry with no renderable component still rejects, just silently
+    const broken = factory.makeSyncUI(
+      0 as unknown as SyncUIComponent<string, void>
+    );
+    let bad!: Tracked<void>;
+    await act(async () => {
+      bad = track(broken("bad"));
+    });
+    await flushMicrotasks();
+    expect((bad.reason() as Error).message).toBe(
+      "react-sync-ui: no component registered for this sync UI"
+    );
+
     expect(error).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
   });

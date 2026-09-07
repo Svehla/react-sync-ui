@@ -19,6 +19,20 @@
   call for the same item, or a call from a stale closure after the item has
   left the queue, is a no-op instead of settling the _next_ caller's promise.
   This also applies to `usePromiseQueue().head.resolve/reject`.
+- **`reject()` with no reason now rejects with an `Error`** instead of
+  `undefined`: `new Error("react-sync-ui: rejected without a reason")`. The
+  idiomatic `catch (error) { toast(error.message) }` therefore no longer throws
+  a `TypeError` on top of the cancellation. Pass your own reason whenever the
+  caller has to tell one apart from another. Applies to `props.reject()` and to
+  `usePromiseQueue().head.reject()`.
+- **`usePromiseQueue` rejects its pending items when the owning component
+  unmounts**, with
+  `new Error("react-sync-ui: usePromiseQueue unmounted with pending items")`.
+  That queue is created by the hook and dies with the component, so previously
+  every `await push(...)` stayed suspended forever. StrictMode's simulated
+  unmount/remount does not drain anything; only a real unmount does. The
+  `makeSyncUI` queue is unaffected — it lives in the factory and survives
+  `<SyncUI />` unmounting.
 - `usePromiseQueue` is now exported from the package entry (previously only
   reachable from `react-sync-ui/src/syncUI`).
 - `reject` is typed as `(reason?: unknown) => void` (was `any`).
@@ -51,14 +65,34 @@
   scheduled when `typeof window === "undefined"`, so a Node process, lambda or
   test worker is no longer held open. `<SyncUI />` renders nothing on the
   server and hydrates cleanly, with pushes before and after hydration.
+- A queued item whose component is missing from the registry (a module graph
+  reset under a live queue) is rejected with
+  `new Error("react-sync-ui: no component registered for this sync UI")`
+  instead of blocking itself and everything queued behind it forever. The
+  development `console.error` is still logged.
+- The dev-only "no `<SyncUI />` is mounted" timer is cleared as soon as a host
+  mounts, instead of lingering for the rest of its 3 s.
+- `process.env.NODE_ENV` is read behind a `typeof process` guard, so importing
+  the package without a bundler (native browser ESM, esbuild or Rollup with no
+  `define`) no longer throws `process is not defined`. The check still
+  constant-folds, so a production bundle keeps dropping the dev warnings.
 - Item keys use a monotonic counter instead of `Math.random()`.
 - `<SyncUI />` renders only the head item's component instead of one wrapper
   per registered component.
 
 ### Types
 
-- Added `SyncUIProps`, `SyncUIComponent`, `SyncUIFactory` and
-  `PromiseQueueAPI` type exports.
+- Added `SyncUIProps`, `SyncUIComponent`, `SyncUIFactory`, `SyncUIFunction`
+  and `PromiseQueueAPI` type exports.
+- `SyncUIFunction<InputData, ResolveValue = void>` names what `makeSyncUI`
+  returns — `(input: InputData) => Promise<ResolveValue>` — so wrappers,
+  context values and props types no longer have to re-spell the signature.
+- `PromiseQueueAPI<InputData, ResolveValue = void>` defaults its second type
+  argument (`PromiseQueueAPI<Msg>` used to be a hard error), and its `head` is
+  now `SyncUIProps<InputData, ResolveValue>` instead of a structurally
+  identical inline type.
+- The public generic parameters are uniformly named `InputData` /
+  `ResolveValue` (they show up verbatim in `dist/*.d.ts` and editor tooltips).
 - `SyncUIComponent<Data, Result>` is `ComponentType<SyncUIProps<Data, Result>>`
   instead of `(props) => ReactNode`, so `React.FC<SyncUIProps<...>>`, class
   components, `memo()` and `forwardRef()` are all accepted by `makeSyncUI`.

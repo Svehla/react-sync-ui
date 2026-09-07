@@ -311,30 +311,40 @@ describe.each(modes)("usePromiseQueue ($name)", ({ strict }) => {
     expect(unhandled.reasons).toEqual([]);
   });
 
-  it("Q14 the store outlives the hook: a captured resolve still settles after unmount", async () => {
+  it("Q14 unmounting the hook rejects every item still queued", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const { result, unmount } = setup<string, number>();
-    let tracked!: Tracked<number>;
+    let a!: Tracked<number>;
+    let b!: Tracked<number>;
 
     await act(async () => {
-      tracked = track(result.current.push("a"));
+      a = track(result.current.push("a"));
+      b = track(result.current.push("b"));
     });
     const captured = result.current.head!;
     const { push } = result.current;
 
+    // The store dies with the component, so nothing could ever settle these.
     unmount();
     await flushMicrotasks();
-    expect(tracked.state()).toBe("pending");
 
+    expect([a.state(), b.state()]).toEqual(["rejected", "rejected"]);
+    expect((a.reason() as Error).message).toBe(
+      "react-sync-ui: usePromiseQueue unmounted with pending items"
+    );
+    expect(b.reason()).toBe(a.reason());
+
+    // Their entries are gone, so a captured handler is a no-op rather than a
+    // second settlement.
     await act(async () => {
       captured.resolve(7);
     });
     await flushMicrotasks();
-    expect(tracked.state()).toBe("fulfilled");
-    expect(tracked.value()).toBe(7);
+    expect(a.state()).toBe("rejected");
+    expect(a.value()).toBeUndefined();
 
     // A push after unmount is accepted and just waits (nobody can see it).
-    const orphan = track(push("b"));
+    const orphan = track(push("c"));
     await flushMicrotasks();
     expect(orphan.state()).toBe("pending");
 

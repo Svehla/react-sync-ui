@@ -5,6 +5,7 @@ export type {
   PromiseQueueAPI,
   SyncUIComponent,
   SyncUIFactory,
+  SyncUIFunction,
   SyncUIProps
 } from "./syncUI.js";
 

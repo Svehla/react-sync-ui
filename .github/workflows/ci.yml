@@ -82,6 +82,12 @@ jobs:
       - name: Test
         run: npm test
 
+      # vitest's typecheck is enabled, so `npm test` above already runs the
+      # .test-d.ts assertions; this also checks src/ + the example-free tree
+      # against the swapped @types/react major.
+      - name: Typecheck (React ${{ matrix.react }} types)
+        run: npm run typecheck
+
   example:
     name: example app (typecheck / build)
     runs-on: ubuntu-latest

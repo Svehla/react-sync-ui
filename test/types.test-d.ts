@@ -6,6 +6,7 @@ import type {
   PromiseQueueAPI,
   SyncUIComponent,
   SyncUIFactory,
+  SyncUIFunction,
   SyncUIProps
 } from "../src/syncUI";
 import { makeSyncUI, SyncUI } from "../src/index";
@@ -97,6 +98,28 @@ describe("SyncUIProps", () => {
   });
 });
 
+describe("SyncUIFunction", () => {
+  it("T15 names what makeSyncUI returns, with ResolveValue defaulting to void", () => {
+    expectTypeOf<SyncUIFunction<string, boolean>>().toEqualTypeOf<
+      (input: string) => Promise<boolean>
+    >();
+    expectTypeOf<SyncUIFunction<string>>().toEqualTypeOf<
+      (input: string) => Promise<void>
+    >();
+
+    const syncConfirm = factory.makeSyncUI<string, boolean>(() => null);
+    expectTypeOf(syncConfirm).toEqualTypeOf<SyncUIFunction<string, boolean>>();
+
+    // the shape a consumer wrapper can now be typed against
+    const withLogging = <InputData, ResolveValue>(
+      call: SyncUIFunction<InputData, ResolveValue>
+    ): SyncUIFunction<InputData, ResolveValue> => call;
+    expectTypeOf(withLogging(syncConfirm)).toEqualTypeOf<
+      SyncUIFunction<string, boolean>
+    >();
+  });
+});
+
 describe("usePromiseQueue", () => {
   it("T4 <string, number>: head and push are typed", () => {
     type API = ReturnType<typeof usePromiseQueue<string, number>>;
@@ -127,6 +150,16 @@ describe("usePromiseQueue", () => {
     expectTypeOf<Default["push"]>().toEqualTypeOf<
       (data: string) => Promise<void>
     >();
+  });
+
+  it("T15b PromiseQueueAPI defaults ResolveValue and reuses SyncUIProps", () => {
+    expectTypeOf<PromiseQueueAPI<string>>().toEqualTypeOf<{
+      head?: SyncUIProps<string, void>;
+      push: (data: string) => Promise<void>;
+    }>();
+    expectTypeOf<
+      NonNullable<PromiseQueueAPI<string, number>["head"]>
+    >().toEqualTypeOf<SyncUIProps<string, number>>();
   });
 
   it("T8 head must be narrowed before use", () => {

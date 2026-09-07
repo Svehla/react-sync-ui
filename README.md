@@ -253,8 +253,10 @@ see the [Prompt recipe](#prompt) for both halves of it.
 
 - If nobody catches a rejected sync UI you get a real unhandled promise rejection — a call you never
   awaited included. Wrap awaits in `try/catch` whenever a component can reject.
-- `props.reject()` with **no argument** rejects with `undefined`, which is painful to handle in a `catch`.
-  Pass an `Error`.
+- `props.reject()` with **no argument** rejects with
+  `new Error("react-sync-ui: rejected without a reason")`, so `catch (error) { error.message }`
+  never throws on top of the cancellation. Pass your own `Error` whenever the caller has to tell
+  one reason from another.
 - `resolve` and `reject` are **bound to their own call**. Calling `resolve` twice, or calling it from a
   dialog that has already been closed (a late HTTP response, a double click), is a **no-op** — it can
   never settle the next caller's promise.
@@ -264,8 +266,10 @@ see the [Prompt recipe](#prompt) for both halves of it.
   is not triggered, so `catch` the call if you want to see what happened.
 - `resolve(promise)` pops the item and opens the next dialog **immediately**, while your caller still
   awaits the inner promise. Resolve with a value, not a thenable.
-- `usePromiseQueue`: unmounting the component that owns the hook leaves its pending promises unsettled
-  forever. Settle them first, or don't unmount with a non-empty queue.
+- `usePromiseQueue`: unmounting the component that owns the hook **rejects everything still queued**
+  with `new Error("react-sync-ui: usePromiseQueue unmounted with pending items")`. That queue lives in
+  the component, so after the unmount nobody could ever settle those promises. Settle them yourself if
+  the callers need a more specific reason.
 
 ## TypeScript
 
@@ -274,9 +278,13 @@ type SyncUIComponent<InputData, ResolveValue = void> = ComponentType<
   SyncUIProps<InputData, ResolveValue>
 >;
 
+type SyncUIFunction<InputData, ResolveValue = void> = (
+  input: InputData
+) => Promise<ResolveValue>;
+
 declare function makeSyncUI<InputData, ResolveValue = void>(
   Component: SyncUIComponent<InputData, ResolveValue>
-): (data: InputData) => Promise<ResolveValue>;
+): SyncUIFunction<InputData, ResolveValue>;
 ```
 
 - `InputData` is the argument of the returned function and the type of `props.data`.
@@ -285,6 +293,8 @@ declare function makeSyncUI<InputData, ResolveValue = void>(
 - For more than one input use an object payload plus a thin positional wrapper, as `syncRichConfirm` /
   `syncConfirm` above do.
 - `SyncUIProps` and `SyncUIComponent` are exported too, so you can declare your component separately.
+- `SyncUIFunction` names what `makeSyncUI` returns, for wrappers, context values and props types:
+  `const withLogging = <D, R>(call: SyncUIFunction<D, R>): SyncUIFunction<D, R> => ...`.
 - Every component shape React renders is accepted: inline arrows, function declarations,
   `const Dialog: React.FC<SyncUIProps<string, boolean>> = ...`, `memo()`, `forwardRef()` and classes.
 
@@ -333,12 +343,18 @@ You can find the full multi-queue example here:
 ## `usePromiseQueue`
 
 The low-level hook behind the library, exported for the rare case where you want to own the rendering.
-`usePromiseQueue<Data, ResolveValue>()` returns `{ head?: { data, resolve, reject }, push }`, scoped to the
+`usePromiseQueue<InputData, ResolveValue>()` returns `{ head?: { data, resolve, reject }, push }`, scoped to the
 component that calls it: `push(data)` appends an item and returns a promise, `head` is the first queued
 item (`undefined` when empty), and `head.resolve` / `head.reject` settle exactly that item. Each calling
 component gets its **own** queue — it is not the default factory's queue — so nothing pushed through
 `makeSyncUI` shows up here. For everything else prefer `makeSyncUI`: same machinery, plus a global
 `await`-able call site.
+
+Because the queue is owned by that component, **unmounting it rejects every item still pending** with
+`new Error("react-sync-ui: usePromiseQueue unmounted with pending items")` — otherwise those promises
+could never settle. StrictMode's simulated unmount/remount does not drain anything; only a real unmount
+does. `makeSyncUI` behaves differently on purpose: its queue lives in the factory, so it survives
+`<SyncUI />` unmounting and is picked up by the next host.
 
 ## API reference
 
@@ -347,9 +363,10 @@ component gets its **own** queue — it is not the default factory's queue — s
 | `makeSyncUI`      | `<InputData, ResolveValue = void>(Component) => (data: InputData) => Promise<ResolveValue>` — promisifies a component on the default queue                                                                                                                |
 | `SyncUI`          | `() => ReactElement \| null` — renders the head of the default queue; mount once, inside your providers                                                                                                                                                   |
 | `syncUIFactory`   | `() => { makeSyncUI, SyncUI }` — an independent queue with its own `makeSyncUI` and `SyncUI`                                                                                                                                                              |
-| `usePromiseQueue` | `<Data, ResolveValue = void>() => { head?: { data, resolve, reject }; push(data): Promise<ResolveValue> }`                                                                                                                                                |
+| `usePromiseQueue` | `<InputData, ResolveValue = void>() => { head?: { data, resolve, reject }; push(data): Promise<ResolveValue> }` — a component-scoped queue; unmounting rejects whatever is still pending                                                                  |
 | `SyncUIProps`     | `type SyncUIProps<InputData, ResolveValue>` — the props your component receives: `data: InputData`, `resolve: (value: ResolveValue) => void`, `reject: (reason?: unknown) => void`; both settle the caller's promise, close the dialog and are idempotent |
-| `PromiseQueueAPI` | `type PromiseQueueAPI<Data, ResolveValue>` — return type of `usePromiseQueue`                                                                                                                                                                             |
+| `SyncUIFunction`  | `type SyncUIFunction<InputData, ResolveValue = void>` — `(input: InputData) => Promise<ResolveValue>`, the awaitable function `makeSyncUI` returns                                                                                                        |
+| `PromiseQueueAPI` | `type PromiseQueueAPI<InputData, ResolveValue = void>` — return type of `usePromiseQueue`; `head` is a `SyncUIProps<InputData, ResolveValue>`                                                                                                             |
 | `SyncUIComponent` | `type SyncUIComponent<InputData, ResolveValue>` — the component shape `makeSyncUI` accepts: `ComponentType<SyncUIProps<InputData, ResolveValue>>`, so `React.FC`, `memo()`, `forwardRef()` and class components all fit                                   |
 | `SyncUIFactory`   | `type SyncUIFactory` — return type of `syncUIFactory()`: `{ makeSyncUI, SyncUI }`                                                                                                                                                                         |
 
@@ -395,9 +412,11 @@ the library, so drive dialogs from event handlers.
 **What if I call a sync function before `<SyncUI />` is mounted?** The item waits in the queue and is shown
 as soon as `<SyncUI />` mounts. If nothing ever mounts you get a dev-only console error.
 
-**Can I load it without a bundler?** No. Like React itself, the library reads `process.env.NODE_ENV` at
-module load to strip its dev warnings, so importing `dist/index.js` straight into a browser throws
-`process is not defined`. Any bundler — or a `define` — handles it.
+**Can I load it without a bundler?** Yes. Like React itself the library reads `process.env.NODE_ENV` at
+module load to decide whether to log its dev warnings, but the read is guarded by `typeof process`, so
+importing `dist/index.js` straight into a browser works — you just get the production behaviour (no dev
+warnings). With a bundler, or a `define`, the check constant-folds and the warnings are dropped from
+production builds entirely.
 
 **How do I test a sync UI?** Await the query rather than the render: click the trigger, then
 `await screen.findByRole("button", { name: "Yes" })` and click it. `findByRole` waits for the dialog to
@@ -422,6 +441,10 @@ reach the DOM, which removes the need for manual `act` gymnastics around the que
    reason before using it.
 7. **`require("react-sync-ui")` needs Node `>=20.19` / `>=22.12`** (unflagged `require(esm)`); on older
    Node use `import` or a dynamic `import()`.
+8. **`reject()` with no reason now rejects with an `Error`**, not `undefined`. If you branched on
+   `catch (error) { if (error === undefined) ... }`, switch to your own reason object — pass it to
+   `props.reject(reason)` — or check the message
+   `"react-sync-ui: rejected without a reason"`.
 
 See [CHANGELOG.md](https://github.com/Svehla/react-sync-ui/blob/main/CHANGELOG.md) for the full list.
 

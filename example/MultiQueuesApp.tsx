@@ -1,26 +1,10 @@
-import { Button, Modal, ModalFooter, ModalHeader } from "reactstrap";
-import { syncUIFactory } from "react-sync-ui";
-
-export const syncUI1 = syncUIFactory();
-export const syncUI2 = syncUIFactory();
-
-const syncAlertQueue1 = syncUI1.makeSyncUI<string, void>(props => (
-  <Modal isOpen toggle={() => props.resolve()}>
-    <ModalHeader>{props.data}</ModalHeader>
-    <ModalFooter>
-      <Button onClick={() => props.resolve()}>OK</Button>
-    </ModalFooter>
-  </Modal>
-));
-
-const syncAlertQueue2 = syncUI2.makeSyncUI<string, void>(props => (
-  <Modal isOpen toggle={() => props.resolve()}>
-    <ModalHeader>{props.data}</ModalHeader>
-    <ModalFooter>
-      <Button onClick={() => props.resolve()}>OK</Button>
-    </ModalFooter>
-  </Modal>
-));
+import { Button } from "reactstrap";
+import {
+  syncAlertQueue1,
+  syncAlertQueue2,
+  syncUI1,
+  syncUI2
+} from "./multiQueues";
 
 /**
  * Two independent queues drain in parallel: you see one dialog per queue at the

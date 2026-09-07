@@ -1,4 +1,5 @@
 import { act, useEffect, useState } from "react";
+import { onTestFinished } from "vitest";
 import type { ReactElement } from "react";
 import { render } from "@testing-library/react";
 import type { RenderOptions } from "@testing-library/react";
@@ -99,12 +100,18 @@ export const trackUnhandled = () => {
   const nodeProcess = (globalThis as unknown as { process: NodeProcessLike })
     .process;
   nodeProcess.on("unhandledRejection", listener);
+  const off = () => {
+    nodeProcess.off("unhandledRejection", listener);
+  };
+  // Unconditional: an assertion that throws before settle() is reached must
+  // not leave the listener attached for the rest of the file.
+  onTestFinished(off);
   return {
     reasons,
     /** Gives Node a macrotask turn to emit the event, then detaches. */
     settle: async () => {
       await delay(10);
-      nodeProcess.off("unhandledRejection", listener);
+      off();
     }
   };
 };

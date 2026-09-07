@@ -29,8 +29,11 @@
   },
   "include": [
     "main.tsx",
+    "App.tsx",
     "MultiQueuesApp.tsx",
+    "multiQueues.tsx",
     "PreMountQueueDemo.tsx",
+    "secondQueue.tsx",
     "syncComponents",
     "vite.config.ts"
   ]

@@ -41,11 +41,19 @@ export default defineConfig({
     setupFiles: ["test/setup.ts"],
     include: ["test/**/*.test.{ts,tsx}"],
     typecheck: {
+      // Run the .test-d.ts type assertions as part of `npm test`.
+      enabled: true,
       include: ["test/**/*.test-d.ts"]
     },
     coverage: {
       provider: "v8",
-      include: ["src/**"]
+      include: ["src/**"],
+      thresholds: {
+        lines: 95,
+        branches: 95,
+        functions: 95,
+        statements: 95
+      }
     }
   }
 });

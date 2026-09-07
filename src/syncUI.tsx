@@ -4,47 +4,58 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   useSyncExternalStore
 } from "react";
 import type { ComponentType, ErrorInfo, ReactElement, ReactNode } from "react";
 
 // The library build leaves `process.env.NODE_ENV` untouched on purpose so the
-// consumer's bundler decides. It has to stay a bare expression: wrapping it
-// (IIFE, try/catch) stops the bundler from constant-folding it, and the dev
-// warnings below would then survive into production bundles.
+// consumer's bundler decides. The `typeof` guard keeps an unbundled import
+// (native browser ESM, esbuild/Rollup with no `define`) from throwing
+// `process is not defined` at module scope; the ternary keeps the expression
+// foldable, because after a `define` both branches are constants and the
+// minifier collapses the whole thing to `false`, taking the dev warnings with
+// it. The shorter `typeof process !== "undefined" && ...` form does NOT fold:
+// `typeof process < "u" && !1` survives, and so do the warning strings.
 declare const process: { env: { NODE_ENV?: string } };
-const isDev = process.env.NODE_ENV !== "production";
+const isDev =
+  typeof process === "undefined"
+    ? false
+    : process.env.NODE_ENV !== "production";
 
 // ------------------------------------------------------------------------------------
 // public types
 
-export type SyncUIProps<Data, Result = void> = {
-  data: Data;
-  resolve: (value: Result) => void;
+export type SyncUIProps<InputData, ResolveValue = void> = {
+  data: InputData;
+  resolve: (value: ResolveValue) => void;
   reject: (reason?: unknown) => void;
 };
 
 // ComponentType, not a bare function type: React 19's FC returns
 // `ReactNode | Promise<ReactNode>`, so `React.FC<SyncUIProps<...>>`, memo(),
 // forwardRef() and class components all have to be accepted here.
-export type SyncUIComponent<Data, Result = void> = ComponentType<
-  SyncUIProps<Data, Result>
+export type SyncUIComponent<InputData, ResolveValue = void> = ComponentType<
+  SyncUIProps<InputData, ResolveValue>
 >;
 
-export type PromiseQueueAPI<Data, ResolveValue> = {
-  head?: {
-    data: Data;
-    resolve: (value: ResolveValue) => void;
-    reject: (reason?: unknown) => void;
-  };
-  push: (data: Data) => Promise<ResolveValue>;
+// The awaitable function `makeSyncUI` returns. Named, so a wrapper, a context
+// value or a props type can refer to it instead of re-spelling the signature.
+export type SyncUIFunction<InputData, ResolveValue = void> = (
+  input: InputData
+) => Promise<ResolveValue>;
+
+// `head` is exactly what a sync component receives, so it reuses SyncUIProps.
+export type PromiseQueueAPI<InputData, ResolveValue = void> = {
+  head?: SyncUIProps<InputData, ResolveValue>;
+  push: (data: InputData) => Promise<ResolveValue>;
 };
 
 export type SyncUIFactory = {
   makeSyncUI: <InputData, ResolveValue = void>(
     Component: SyncUIComponent<InputData, ResolveValue>
-  ) => (input: InputData) => Promise<ResolveValue>;
+  ) => SyncUIFunction<InputData, ResolveValue>;
   SyncUI: () => ReactElement | null;
 };
 
@@ -64,11 +75,17 @@ type Entry<Data, ResolveValue> = {
 // Monotonic, so React keys are unique per queued item (no Math.random()).
 let entrySeq = 0;
 
+const defaultRejectReason = () =>
+  new Error("react-sync-ui: rejected without a reason");
+
 /**
- * The queue lives OUTSIDE React. Every mutation happens in an event handler or
- * an async continuation, never during render and never inside a setState
+ * The queue lives OUTSIDE React. Every mutation happens in an event handler, an
+ * async continuation or a commit-phase lifecycle (the error boundary's
+ * `componentDidCatch`), never during render and never inside a setState
  * updater, so StrictMode's double render / double updater passes and HMR
- * remounts can neither duplicate nor lose a promise settlement.
+ * remounts can neither duplicate nor lose a promise settlement. The
+ * commit-phase case is safe because a mutation only schedules a rerender
+ * through the subscription; it never runs while React is rendering.
  */
 const createQueueStore = <Data, ResolveValue>() => {
   let queue: readonly Entry<Data, ResolveValue>[] = [];
@@ -112,16 +129,30 @@ const createQueueStore = <Data, ResolveValue>() => {
     run(entry);
   };
 
+  // Rejects everything still queued at once (used when the owner of the queue
+  // goes away), so no caller is left awaiting a promise nobody can settle.
+  const drain = (reason: unknown) => {
+    if (queue.length === 0) return;
+    const abandoned = queue;
+    queue = [];
+    emit();
+    abandoned.forEach(item => item.reject(reason));
+  };
+
   return {
     subscribe,
     emit,
     getHead,
     push,
+    drain,
     size: () => queue.length,
     resolveEntry: (entry: Entry<Data, ResolveValue>, value: ResolveValue) =>
       settle(entry, item => item.resolve(value)),
+    // `reject()` with no reason would reject with `undefined`, so the
+    // idiomatic `catch (error) { toast(error.message) }` would throw on top of
+    // the cancellation. One default, applied for every caller.
     rejectEntry: (entry: Entry<Data, ResolveValue>, reason?: unknown) =>
-      settle(entry, item => item.reject(reason))
+      settle(entry, item => item.reject(reason ?? defaultRejectReason()))
   };
 };
 
@@ -132,21 +163,45 @@ const getNullSnapshot = () => null;
 
 const defaultQueueType = Symbol("usePromiseQueue");
 
-export const usePromiseQueue = <Data, ResolveValue = void>(): PromiseQueueAPI<
-  Data,
-  ResolveValue
-> => {
+export const usePromiseQueue = <
+  InputData,
+  ResolveValue = void
+>(): PromiseQueueAPI<InputData, ResolveValue> => {
   // Lazy initializer: StrictMode may run it twice, but it only allocates.
-  const [store] = useState(() => createQueueStore<Data, ResolveValue>());
+  const [store] = useState(() => createQueueStore<InputData, ResolveValue>());
   const head = useSyncExternalStore(
     store.subscribe,
     store.getHead,
     getNullSnapshot
   );
   const push = useCallback(
-    (data: Data) => store.push(defaultQueueType, data),
+    (data: InputData) => store.push(defaultQueueType, data),
     [store]
   );
+
+  // Unlike the factory queue (which outlives every host), this store is owned
+  // by the component, so anything still queued when it unmounts could never be
+  // settled by anyone: every `await push(...)` would stay suspended forever.
+  // The drain is deferred to a microtask and cancelled if the effect runs
+  // again, because StrictMode (and Fast Refresh) replay mount/unmount/mount
+  // synchronously: draining on that simulated unmount would reject items a
+  // sibling had just pushed from its own mount effect.
+  const drainPending = useRef(false);
+  useEffect(() => {
+    drainPending.current = false;
+    return () => {
+      drainPending.current = true;
+      queueMicrotask(() => {
+        if (!drainPending.current) return;
+        drainPending.current = false;
+        store.drain(
+          new Error(
+            "react-sync-ui: usePromiseQueue unmounted with pending items"
+          )
+        );
+      });
+    };
+  }, [store]);
 
   return useMemo(
     () => ({
@@ -248,7 +303,7 @@ export const syncUIFactory = (): SyncUIFactory => {
 
   const makeSyncUI = <InputData, ResolveValue = void>(
     Component: SyncUIComponent<InputData, ResolveValue>
-  ) => {
+  ): SyncUIFunction<InputData, ResolveValue> => {
     const type = Symbol(
       (Component as { displayName?: string }).displayName ||
         Component.name ||
@@ -283,11 +338,19 @@ export const syncUIFactory = (): SyncUIFactory => {
     useEffect(() => {
       hosts.add(token);
       hostEverMounted = true;
+      // A host is here: the "nothing ever mounted" warning can no longer fire,
+      // so the handle should not linger (it would hold a Node test run open).
+      if (noHostTimer !== undefined) {
+        clearTimeout(noHostTimer);
+        noHostTimer = undefined;
+      }
       store.emit();
       // React 19 <Activity mode="hidden"> disconnects the store subscription
       // and re-shows with a stale cached snapshot, so emit() alone compares
       // equal and skips the render. A local state bump cannot be skipped.
-      rerender();
+      // Only worth it when there is something to re-read: mounting with an
+      // empty queue is the common case and should not cost an extra render.
+      if (store.getHead()) rerender();
 
       // Deferred one tick and cleared on cleanup, so the HMR overlap (new
       // instance mounted, old one not yet unmounted) never false-warns.
@@ -314,14 +377,25 @@ export const syncUIFactory = (): SyncUIFactory => {
 
     const Dialog = head ? components.get(head.type) : undefined;
 
-    // Kept out of render so StrictMode cannot log it twice.
+    // An entry whose component is missing can never be rendered, so "log and
+    // stall" would block it AND everything queued behind it forever; reject it
+    // instead and let the queue move on. Kept out of render so StrictMode
+    // cannot run it twice. Not reachable through the public API, because
+    // makeSyncUI registers the component in the same statement that mints its
+    // symbol; this is the recovery path for a registry that lost the entry (a
+    // module graph reset under a live queue).
     useEffect(() => {
-      if (isDev && head && !components.get(head.type)) {
+      if (!head || components.get(head.type)) return;
+      if (isDev) {
         console.error(
           "[react-sync-ui] no component registered for the queued item",
           head.type
         );
       }
+      store.rejectEntry(
+        head,
+        new Error("react-sync-ui: no component registered for this sync UI")
+      );
     }, [head]);
 
     const handlers = useMemo(

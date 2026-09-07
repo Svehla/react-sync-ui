@@ -26,10 +26,10 @@ share a single React copy.
 
 | Demo                                        | File                    | Shows                                                                                                           |
 | ------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Awaiting a dialog like a function call      | `main.tsx`              | `await syncConfirm(...)` inside a plain `async` handler; follow-up dialogs queue instead of stacking            |
-| Looping until the input is right            | `main.tsx`              | a `while` loop around `await syncPrompt(...)` - no "is the modal open" state                                    |
-| Cancelling: `props.reject` with `try/catch` | `main.tsx`              | closing a prompt calls `props.reject(...)`, the awaited promise rejects, a plain `try/catch` handles it         |
-| Start hacking second queue                  | `main.tsx`              | a second, independent queue created with `syncUIFactory()`                                                      |
+| Awaiting a dialog like a function call      | `App.tsx`               | `await syncConfirm(...)` inside a plain `async` handler; follow-up dialogs queue instead of stacking            |
+| Looping until the input is right            | `App.tsx`               | a `while` loop around `await syncRichPrompt(...)` - no "is the modal open" state                                |
+| Cancelling: `props.reject` with `try/catch` | `App.tsx`               | closing a prompt calls `props.reject(...)`, the awaited promise rejects, a plain `try/catch` handles it         |
+| Start hacking second queue                  | `secondQueue.tsx`       | a second, independent queue created with `syncUIFactory()`                                                      |
 | Two independent queues at once              | `MultiQueuesApp.tsx`    | two factories draining in parallel while each queue stays FIFO                                                  |
 | Pushing before `<SyncUI />` is mounted      | `PreMountQueueDemo.tsx` | calls made before the queue's `<SyncUI />` mounts are queued, not thrown away (plus the dev-only console error) |
 
@@ -38,6 +38,37 @@ Every demo is started by a click - nothing fires on mount, on purpose: under
 twice.
 
 The promisified dialogs live in `syncComponents/`.
+
+## Fast Refresh
+
+React Fast Refresh can only hot-swap a module whose **every export is a
+component**. One extra export - a `syncUIFactory()` instance, a helper, a
+constant - makes the file a non-boundary: Vite gives up on it
+(`[vite] invalidate ...: Could not Fast Refresh ("x" export is incompatible)`),
+walks up to its importers and, if it reaches the entry, does a full page reload,
+which closes whatever dialog was open.
+
+So the example is split along that rule:
+
+- `main.tsx` is the entry only: it exports nothing, defines no component and
+  just calls `createRoot`, so HMR must never re-execute it (re-running
+  `createRoot` on the same container logs
+  _"You are calling ReactDOMClient.createRoot() on a container that has already
+  been passed to createRoot()"_).
+- `App.tsx`, `MultiQueuesApp.tsx` and `PreMountQueueDemo.tsx` export **only**
+  components, so they are boundaries and absorb the update.
+- The queue factories and the dialogs built from them live in their own
+  modules - `secondQueue.tsx`, `multiQueues.tsx`, `syncComponents/*`. These are
+  not boundaries themselves (they export functions and objects, not components);
+  their edits propagate one level up to the component file that imports them,
+  which _is_ a boundary. Keeping the factories out of the component files also
+  means a hot update never re-runs `syncUIFactory()` and never mounts a second
+  `<SyncUI />` for the same queue.
+
+Editing `syncComponents/SyncConfirm.tsx` with a dialog open should log
+`[vite] hot updated: /App.tsx` and leave the dialog on screen. If you instead
+see `[vite] invalidate` or a full reload, some file on the path picked up a
+non-component export.
 
 ## Scripts
 

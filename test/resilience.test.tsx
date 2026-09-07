@@ -4,6 +4,7 @@ import type { ErrorInfo, ReactNode } from "react";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { syncUIFactory } from "../src/syncUI";
+import type { SyncUIComponent } from "../src/syncUI";
 import {
   flushMicrotasks,
   makeAlert,
@@ -243,6 +244,51 @@ describe.each(modes)("R2 a throwing dialog ($name)", ({ strict }) => {
     expect(c!.state()).toBe("fulfilled");
     // 2 observed: one React log per thrown error.
     expect(consoleError.mock.calls.length).toBeLessThanOrEqual(4);
+  });
+});
+
+// ------------------------------------------------------------------------------------
+// an entry whose component cannot be rendered
+
+describe("R4 an entry with no renderable component", () => {
+  it("rejects the entry and drains the queue instead of stalling", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const user = userEvent.setup();
+    const factory = syncUIFactory();
+
+    // The public API cannot reach this state, because makeSyncUI registers
+    // the component in the same statement that mints its symbol, so the
+    // registry is poisoned directly. Anything falsy means "no component for
+    // this entry" to both the render path and the recovery effect.
+    const broken = factory.makeSyncUI(
+      0 as unknown as SyncUIComponent<string, void>
+    );
+    const syncAlert = makeAlert(factory);
+    renderWithStrict(<factory.SyncUI />, false);
+
+    let bad!: Tracked<void>;
+    let good!: Tracked<void>;
+    await act(async () => {
+      bad = track(broken("bad"));
+      good = track(syncAlert("good"));
+    });
+    await flushMicrotasks();
+
+    expect(bad.state()).toBe("rejected");
+    expect((bad.reason() as Error).message).toBe(
+      "react-sync-ui: no component registered for this sync UI"
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      "[react-sync-ui] no component registered for the queued item",
+      expect.any(Symbol)
+    );
+
+    // the item behind it is not blocked
+    await user.click(await findButton("good"));
+    await flushMicrotasks();
+    expect(good.state()).toBe("fulfilled");
   });
 });
 

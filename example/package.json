@@ -17,11 +17,11 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
+    "@types/node": "^26.4.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2"
   },
   "engines": {

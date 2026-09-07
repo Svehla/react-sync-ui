@@ -1,9 +1,7 @@
 /**
- * Vite's `?raw` imports, used by the demo cards to show the real source of the
- * handler they run. `vite/client` declares this too, but the example's
- * `tsconfig.json` pins `types` to `["node"]`, so declare it explicitly.
+ * Vite's ambient module types: `*.css` side-effect imports and the `?raw`
+ * imports the demo cards use to show the real source of the handler they run.
+ * The example's `tsconfig.json` pins `types` to `["node"]`, so pull them in
+ * explicitly instead of relying on automatic @types inclusion.
  */
-declare module "*?raw" {
-  const content: string;
-  export default content;
-}
+/// <reference types="vite/client" />

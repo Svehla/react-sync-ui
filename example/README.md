@@ -59,13 +59,20 @@ gives back the file as a string, so the code you read on the page is always the
 code the button runs. `vite-env.d.ts` declares that module suffix for TypeScript
 (the example pins `types` to `["node"]`, so `vite/client` is not pulled in).
 
+`ui/CodePanel.tsx` colours that string with
+[`prism-react-renderer`](https://github.com/FormidableLabs/prism-react-renderer)
+(the `tsx` grammar and the GitHub light theme) - the example's only runtime
+dependency besides React, and it only wraps characters in spans, so the panel
+text and the Copy button still hand back the file verbatim.
+
 ### The dialogs
 
 The promisified dialogs live in `syncComponents/`. They are composed from
 `ui/Dialog.tsx` (a small wrapper around the native `<dialog>` element) and
 `ui/Button.tsx`; `ui/DemoCard.tsx`, `ui/CodePanel.tsx` and `ui/Trace.tsx` are
-the page furniture, and the whole look is `styles.css` (light and dark via
-`prefers-color-scheme`).
+the page furniture, and the whole look is `styles.css` - one light palette,
+pinned with `color-scheme: light` so the native `<dialog>` and its form controls
+stay light whatever the OS is set to.
 
 `ui/Dialog.tsx` opens itself in an effect on mount and closes on unmount. It
 defaults to `showModal()`, which gives you a real `::backdrop` and native close

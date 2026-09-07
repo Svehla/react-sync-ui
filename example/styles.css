@@ -1,7 +1,10 @@
-/* The whole look of the example: no CSS framework, one file, two palettes. */
+/* The whole look of the example: no CSS framework, one file, one light palette. */
 
 :root {
-  color-scheme: light dark;
+  /* light only, whatever the OS is set to: this also pins the native
+     <dialog>, its ::backdrop and the form controls inside it to light, since
+     the UA styles those from color-scheme rather than from our variables */
+  color-scheme: light;
 
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -17,23 +20,6 @@
   --shadow-lg: 0 16px 48px rgb(15 32 46 / 20%);
   --radius: 12px;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1319;
-    --surface: #161b23;
-    --sunken: #10151c;
-    --fg: #e6edf3;
-    --muted: #9aa7b5;
-    --border: #262d38;
-    --accent: #3b82f6;
-    --accent-hover: #60a5fa;
-    --accent-soft: #17243c;
-    --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-lg: 0 16px 48px rgb(0 0 0 / 55%);
-  }
 }
 
 * {
@@ -218,6 +204,9 @@ input:focus-visible {
   margin: 0;
   padding: 0.85rem 1rem;
   overflow-x: auto;
+  /* the highlighter only colours the text; the block keeps the panel's own
+     surface, so the bar and the code read as one card */
+  background: var(--sunken);
   font-family: var(--mono);
   font-size: 0.78rem;
   line-height: 1.6;
@@ -229,6 +218,12 @@ input:focus-visible {
   border: none;
   padding: 0;
   font-size: inherit;
+}
+
+/* one span per source line, only there to hang a newline off - it must not add
+   any box of its own, or the panel text would stop matching the file */
+.code__line {
+  display: inline;
 }
 
 /* trace --------------------------------------------------------------- */

@@ -9,7 +9,11 @@ export const syncAlert = makeSyncUI<string, void>(function SyncAlert(props) {
       // an alert has nothing to decide: the x, Escape and the backdrop all mean
       // the same thing as OK
       onClose={() => props.resolve()}
-      footer={<Button onClick={() => props.resolve()}>OK</Button>}
+      footer={
+        <Button primary onClick={() => props.resolve()}>
+          OK
+        </Button>
+      }
     />
   );
 });

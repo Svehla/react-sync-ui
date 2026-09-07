@@ -28,12 +28,14 @@
     }
   },
   "include": [
+    "vite-env.d.ts",
     "main.tsx",
     "App.tsx",
     "MultiQueuesApp.tsx",
     "multiQueues.tsx",
     "PreMountQueueDemo.tsx",
-    "secondQueue.tsx",
+    "lateQueue.tsx",
+    "demos",
     "syncComponents",
     "ui",
     "vite.config.ts"

@@ -1,204 +1,99 @@
-import { useState } from "react";
-import type { ReactNode } from "react";
 import { SyncUI } from "react-sync-ui";
+import askNameSource from "./demos/askName.ts?raw";
+import confirmDeleteSource from "./demos/confirmDelete.ts?raw";
+import loginSource from "./demos/login.ts?raw";
+import pickPlanSource from "./demos/pickPlan.ts?raw";
+import { askName } from "./demos/askName";
+import { confirmDelete } from "./demos/confirmDelete";
+import { login } from "./demos/login";
+import { pickPlan } from "./demos/pickPlan";
 import { MultiQueuesApp } from "./MultiQueuesApp";
 import { PreMountQueueDemo } from "./PreMountQueueDemo";
-import { alert2, secondInstance } from "./secondQueue";
-import { syncAlert } from "./syncComponents/SyncAlert";
-import { syncConfirm, syncRichConfirm } from "./syncComponents/SyncConfirm";
-import { syncPrompt, syncRichPrompt } from "./syncComponents/SyncPrompt";
-import { Button } from "./ui/Button";
-
-const delay = (time: number) => new Promise(res => setTimeout(res, time));
-
-/** One demo block: heading, one-line explanation, then the buttons. */
-const Demo = (props: {
-  title: string;
-  children: ReactNode;
-  description: ReactNode;
-}) => (
-  <section className="demo">
-    <h2>{props.title}</h2>
-    <p className="muted">{props.description}</p>
-    {props.children}
-  </section>
-);
+import { DemoCard } from "./ui/DemoCard";
 
 /**
  * This file exports a component and nothing else, which keeps it a Fast Refresh
- * boundary: editing `syncComponents/*` hot-updates the app instead of reloading
- * the page and losing the dialog that is open (see README - "Fast Refresh").
+ * boundary: editing `demos/*` or `syncComponents/*` hot-updates the app instead
+ * of reloading the page and losing the dialog that is open (see README - "Fast
+ * Refresh").
  */
-export const App = () => {
-  // Shows on the page what the `catch` block below actually received.
-  const [lastRejection, setLastRejection] = useState<string | null>(null);
-  // Same idea for the login demo, but as a short human-readable status.
-  const [loginStatus, setLoginStatus] = useState<string | null>(null);
+export const App = () => (
+  <main className="page">
+    {/* the default queue, shared by every demo in the first section */}
+    <SyncUI />
 
-  const login = async () => {
-    setLoginStatus(null);
-    try {
-      const name = await syncPrompt("Fill your name");
-
-      while (
-        (await syncRichPrompt({
-          title: "Fill your password!",
-          inputType: "password"
-        })) !== "1234"
-      ) {
-        await syncAlert("Invalid password, keep trying");
-      }
-
-      await syncAlert(`Congratulation ${name}, you are logged in`);
-      setLoginStatus(`Logged in as ${name}`);
-    } catch {
-      // closing either prompt rejects the awaited promise, so the loop stops
-      // here instead of hanging or throwing into the console
-      setLoginStatus("Login cancelled");
-    }
-  };
-
-  const startHacking = async () => {
-    setLastRejection(null);
-    try {
-      const userName = "User";
-
-      const shouldContinue = await syncRichConfirm({
-        title: `Hi ${userName}!`,
-        description: "Do you want to play a game?"
-      });
-      if (!shouldContinue) {
-        await syncAlert(`Bad luck ${userName}, you have to!`);
-      }
-
-      let triesCount = 0;
-
-      while (
-        (await syncRichPrompt({
-          title: `Fill the secret ${userName}!`,
-          inputType: "password"
-        })) !== userName
-      ) {
-        triesCount++;
-        await syncAlert(
-          triesCount > 3
-            ? "Try to fill your user name"
-            : `Bad password, keep trying ${userName}`
-        );
-      }
-
-      await syncAlert(`Congratulation ${userName}, you hacked the system`);
-    } catch (error) {
-      // Closing the password prompt calls props.reject(...), which rejects the
-      // awaited promise - so a plain try/catch handles "user cancelled".
-      setLastRejection(String(error));
-      console.error(error);
-      await syncAlert("U quit the G A M E... U Loser!");
-      await delay(1_000);
-      await syncAlert("LOL, L O S E R - Xd!");
-    }
-  };
-
-  return (
-    <main className="container">
-      {/* the default queue */}
-      <SyncUI />
-      {/* an independent, second queue */}
-      <secondInstance.SyncUI />
-
-      <h1>react-sync-ui playground</h1>
-      <p className="muted">
-        Every dialog below is a normal React component turned into an awaitable
-        function by <code>makeSyncUI</code>. Nothing opens on page load - each
-        demo starts from a click, so the control flow you read in the handler is
-        exactly the control flow you see on screen. Open the console to follow
-        along.
+    <header className="hero">
+      <h1 className="hero__title">react-sync-ui</h1>
+      <p className="hero__tagline">
+        Await a dialog like any other function:{" "}
+        <code>const ok = await syncConfirm(&quot;Delete 3 files?&quot;)</code>
       </p>
-      <hr />
+      <nav className="hero__links">
+        <a href="https://github.com/Svehla/react-sync-ui">GitHub</a>
+        <a href="https://www.npmjs.com/package/react-sync-ui">npm</a>
+      </nav>
+    </header>
 
-      <Demo
-        title="Awaiting a dialog like a function call"
-        description={
-          <>
-            <code>await syncConfirm(...)</code> returns the button the user
-            pressed, so branching on the answer is just an <code>if</code>. The
-            follow-up dialogs are queued: they open one after another, never on
-            top of each other.
-          </>
-        }
-      >
-        <Button
-          onClick={async () => {
-            // call a synchronous UI workflow made of promisified React components
-            const likeSyncUI = await syncConfirm("Do you like this library?");
+    <h2 className="section__title">Demos</h2>
+    <p className="section__intro">
+      Four everyday tasks. Each one shows the handler that runs it - the exact
+      source of the file, not a copy - and traces every awaited step as you
+      click through the dialogs.
+    </p>
 
-            if (likeSyncUI) {
-              await syncAlert("Thanks, we like you too");
-            } else {
-              const isUserSure = await syncConfirm("Are you sure?");
-              if (isUserSure) {
-                await syncAlert("Try to give it a second try");
-              } else {
-                await syncAlert("Thanks, we like you too");
-              }
-            }
-          }}
-        >
-          Run
-        </Button>
-      </Demo>
+    <DemoCard
+      title="Confirm before a destructive action"
+      intro="Ask first, then act: the answer is the value the await returns, so branching on it is a plain if."
+      action="Delete files"
+      fileName="demos/confirmDelete.ts"
+      code={confirmDeleteSource}
+      run={confirmDelete}
+    />
 
-      <Demo
-        title="Looping until the input is right"
-        description={
-          <>
-            A <code>while</code> loop around <code>await syncPrompt(...)</code>{" "}
-            - no state machine, no &quot;is the modal open&quot; flag. The
-            password is <code>1234</code>. Close either prompt with its{" "}
-            <code>&times;</code> and the loop is cancelled instead of looping
-            forever.
-          </>
-        }
-      >
-        <Button onClick={login}>Login</Button>
-        {loginStatus && <p className="log">{loginStatus}</p>}
-      </Demo>
+    <DemoCard
+      title="Ask for a value"
+      intro="A prompt resolves with what the user typed - and rejects when they close it, so a cancel is just a catch."
+      action="Ask my name"
+      fileName="demos/askName.ts"
+      code={askNameSource}
+      hint="Try it once with a name, once with the x."
+      run={askName}
+    />
 
-      <Demo
-        title="Cancelling: props.reject caught with try/catch"
-        description={
-          <>
-            Closing the password prompt - with the <code>&times;</code>, the
-            backdrop or Esc - calls <code>props.reject(...)</code> and the
-            awaited promise rejects. The handler catches it in a plain{" "}
-            <code>try/catch</code>. Type <code>User</code> to win instead. The
-            second button pushes three alerts into an independent queue built
-            with <code>syncUIFactory()</code>.
-          </>
-        }
-      >
-        <Button primary onClick={startHacking}>
-          Start Hacking
-        </Button>{" "}
-        <Button
-          onClick={async () => {
-            await alert2("1");
-            await alert2("2");
-            await alert2("3");
-          }}
-        >
-          Start hacking second queue
-        </Button>
-        {lastRejection && (
-          <p className="danger">
-            caught in <code>catch</code>: {lastRejection}
-          </p>
-        )}
-      </Demo>
+    <DemoCard
+      title="Login with retries"
+      intro="A while loop around an awaited prompt keeps asking until the password is 1234 - no state machine, no 'is the modal open' flag."
+      action="Log in"
+      fileName="demos/login.ts"
+      code={loginSource}
+      hint="Close a prompt with the x to cancel the whole loop."
+      run={login}
+    />
 
-      <MultiQueuesApp />
+    <DemoCard
+      title="A small wizard"
+      intro="Three chained steps read top to bottom: pick a plan, confirm it, done."
+      action="Start the wizard"
+      fileName="demos/pickPlan.ts"
+      code={pickPlanSource}
+      run={pickPlan}
+    />
 
-      <PreMountQueueDemo />
-    </main>
-  );
-};
+    <hr className="divider" />
+
+    <h2 className="section__title">Advanced</h2>
+    <p className="section__intro">
+      The two mechanics behind the demos above: independent queues, and what
+      happens when you call one before its host is on the page.
+    </p>
+
+    <MultiQueuesApp />
+    <PreMountQueueDemo />
+
+    <footer className="footer">
+      Every dialog here is a native <code>&lt;dialog&gt;</code> element and one
+      small stylesheet - no UI framework. Nothing opens on page load: each demo
+      starts from a click.
+    </footer>
+  </main>
+);

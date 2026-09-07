@@ -17,8 +17,7 @@ const lateInstance = syncUIFactory();
 const lateAlert = lateInstance.makeSyncUI<string, void>(props => (
   <Dialog
     title={props.data}
-    onCancel={() => props.resolve()}
-    onBackdropClick={() => props.resolve()}
+    onClose={() => props.resolve()}
     footer={<Button onClick={() => props.resolve()}>OK</Button>}
   />
 ));

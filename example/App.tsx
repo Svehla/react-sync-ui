@@ -32,6 +32,31 @@ const Demo = (props: {
 export const App = () => {
   // Shows on the page what the `catch` block below actually received.
   const [lastRejection, setLastRejection] = useState<string | null>(null);
+  // Same idea for the login demo, but as a short human-readable status.
+  const [loginStatus, setLoginStatus] = useState<string | null>(null);
+
+  const login = async () => {
+    setLoginStatus(null);
+    try {
+      const name = await syncPrompt("Fill your name");
+
+      while (
+        (await syncRichPrompt({
+          title: "Fill your password!",
+          inputType: "password"
+        })) !== "1234"
+      ) {
+        await syncAlert("Invalid password, keep trying");
+      }
+
+      await syncAlert(`Congratulation ${name}, you are logged in`);
+      setLoginStatus(`Logged in as ${name}`);
+    } catch {
+      // closing either prompt rejects the awaited promise, so the loop stops
+      // here instead of hanging or throwing into the console
+      setLoginStatus("Login cancelled");
+    }
+  };
 
   const startHacking = async () => {
     setLastRejection(null);
@@ -51,7 +76,6 @@ export const App = () => {
       while (
         (await syncRichPrompt({
           title: `Fill the secret ${userName}!`,
-          canUserReject: true,
           inputType: "password"
         })) !== userName
       ) {
@@ -130,37 +154,23 @@ export const App = () => {
           <>
             A <code>while</code> loop around <code>await syncPrompt(...)</code>{" "}
             - no state machine, no &quot;is the modal open&quot; flag. The
-            password is <code>1234</code>.
+            password is <code>1234</code>. Close either prompt with its{" "}
+            <code>&times;</code> and the loop is cancelled instead of looping
+            forever.
           </>
         }
       >
-        <Button
-          onClick={async () => {
-            const name = await syncPrompt("Fill your name");
-
-            while (
-              (await syncRichPrompt({
-                title: "Fill your password!",
-                inputType: "password"
-              })) !== "1234"
-            ) {
-              await syncAlert("Invalid password, keep trying");
-            }
-
-            await syncAlert(`Congratulation ${name}, you are logged in`);
-          }}
-        >
-          Login
-        </Button>
+        <Button onClick={login}>Login</Button>
+        {loginStatus && <p className="log">{loginStatus}</p>}
       </Demo>
 
       <Demo
         title="Cancelling: props.reject caught with try/catch"
         description={
           <>
-            The password prompt is created with <code>canUserReject</code>, so
-            closing it (backdrop or Esc) calls <code>props.reject(...)</code>{" "}
-            and the awaited promise rejects. The handler catches it in a plain{" "}
+            Closing the password prompt - with the <code>&times;</code>, the
+            backdrop or Esc - calls <code>props.reject(...)</code> and the
+            awaited promise rejects. The handler catches it in a plain{" "}
             <code>try/catch</code>. Type <code>User</code> to win instead. The
             second button pushes three alerts into an independent queue built
             with <code>syncUIFactory()</code>.

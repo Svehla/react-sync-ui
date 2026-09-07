@@ -8,22 +8,19 @@ export const syncRichPrompt = makeSyncUI<
     title: string;
     description?: string;
     inputLabel?: string;
-    canUserReject?: boolean;
     inputType?: "password" | "text";
   },
   string
 >(props => {
   const [input, setInput] = useState("");
 
-  // Escape and a backdrop click are the two ways to "close" a native modal
-  // dialog; both reject, but only when the caller opted into it.
-  const close = () => {
-    if (!props.data.canUserReject) return;
-    props.reject(new Error("User forced close prompt modal"));
-  };
+  // A prompt has no neutral answer, so closing it - with the x, Escape or a
+  // backdrop click - rejects the awaited promise. Every caller therefore has to
+  // handle a cancel, which is exactly the point of the demo.
+  const close = () => props.reject(new Error("User closed the prompt"));
 
   return (
-    <Dialog title={props.data.title} onCancel={close} onBackdropClick={close}>
+    <Dialog title={props.data.title} onClose={close}>
       <form
         onSubmit={e => {
           e.preventDefault();

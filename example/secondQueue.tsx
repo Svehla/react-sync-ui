@@ -19,5 +19,13 @@ export const alert2 = secondInstance.makeSyncUI<string, void>(props => (
   <div className="panel">
     <h1>{props.data}</h1>
     <Button onClick={() => props.resolve()}>Resolve</Button>
+    <button
+      type="button"
+      className="close-btn"
+      aria-label="Close"
+      onClick={() => props.resolve()}
+    >
+      &times;
+    </button>
   </div>
 ));

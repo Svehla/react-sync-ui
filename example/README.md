@@ -39,7 +39,7 @@ Every demo is started by a click - nothing fires on mount, on purpose: under
 twice.
 
 The promisified dialogs live in `syncComponents/`. They are composed from
-`ui/Dialog.tsx` (a ~55 line wrapper around the native `<dialog>` element) and
+`ui/Dialog.tsx` (a small wrapper around the native `<dialog>` element) and
 `ui/Button.tsx`; the whole look of the page is `styles.css`.
 
 `ui/Dialog.tsx` opens itself in an effect on mount and closes on unmount. It
@@ -49,6 +49,11 @@ only one modal dialog can be interacted with at a time. The two-queue demos need
 two dialogs clickable side by side, so they pass `modal={false}` and get
 `show()` instead; the second-queue demo goes one step further and renders a
 plain fixed panel.
+
+Every dialog on the page has a `x` close button in its header (the same thing
+Escape and a backdrop click do): on an alert it resolves like `OK`, on a confirm
+it answers `No`, and on a prompt it calls `props.reject(...)` so the caller's
+`try/catch` runs - the Login demo catches it and prints _Login cancelled_.
 
 ## Fast Refresh
 

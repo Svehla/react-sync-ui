@@ -145,6 +145,9 @@ export const syncAlert = makeSyncUI<string, void>(props => {
   return (
     <dialog ref={ref} onCancel={() => props.resolve()}>
       <h2>{props.data}</h2>
+      <button type="button" aria-label="Close" onClick={() => props.resolve()}>
+        &times;
+      </button>
       <button onClick={() => props.resolve()}>OK</button>
     </dialog>
   );
@@ -170,6 +173,14 @@ export const syncPrompt = makeSyncUI<string, string>(props => {
       ref={ref}
       onCancel={() => props.reject(new Error("User closed the prompt"))}
     >
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => props.reject(new Error("User closed the prompt"))}
+      >
+        &times;
+      </button>
+
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -229,6 +240,13 @@ export const syncRichConfirm = makeSyncUI<ConfirmData, boolean>(props => {
   return (
     <dialog ref={ref} onCancel={() => props.resolve(false)}>
       <h2>{props.data.title}</h2>
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => props.resolve(false)}
+      >
+        &times;
+      </button>
       <p>{props.data.description}</p>
       <button autoFocus onClick={() => props.resolve(true)}>
         {props.data.okBtn ?? "Yes"}

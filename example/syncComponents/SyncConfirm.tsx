@@ -13,8 +13,8 @@ export const syncRichConfirm = makeSyncUI<
 >(props => (
   <Dialog
     title={props.data.title}
-    onCancel={() => props.resolve(false)}
-    onBackdropClick={() => props.resolve(false)}
+    // closing a confirm without answering is a "no"
+    onClose={() => props.resolve(false)}
     footer={
       <>
         <Button onClick={() => props.resolve(true)}>

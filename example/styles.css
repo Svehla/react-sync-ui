@@ -148,12 +148,52 @@ hr {
 }
 
 .dialog__box {
+  position: relative;
   padding: 1.25rem 1.5rem;
 }
 
 .dialog__title {
   margin: 0;
   font-size: 1.1rem;
+}
+
+/* room for the x sitting in the corner */
+.dialog__box--closable .dialog__title {
+  padding-right: 2rem;
+}
+
+/* The x of every closable dialog and of the second-queue panel: painted in the
+   top-right corner, but the last child in the DOM, so it is the last stop in
+   the tab order instead of the first. A borderless icon button with a real
+   focus ring. */
+.close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: #f1f4f8;
+  color: var(--fg);
+}
+
+.close-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .dialog__body {
@@ -200,5 +240,6 @@ hr {
 
 .panel h1 {
   margin: 0 0 0.75rem;
+  padding-right: 2rem;
   font-size: 1.5rem;
 }

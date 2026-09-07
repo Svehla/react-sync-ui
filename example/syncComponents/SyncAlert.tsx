@@ -6,8 +6,9 @@ export const syncAlert = makeSyncUI<string, void>(function SyncAlert(props) {
   return (
     <Dialog
       title={props.data}
-      onCancel={() => props.resolve()}
-      onBackdropClick={() => props.resolve()}
+      // an alert has nothing to decide: the x, Escape and the backdrop all mean
+      // the same thing as OK
+      onClose={() => props.resolve()}
       footer={<Button onClick={() => props.resolve()}>OK</Button>}
     />
   );

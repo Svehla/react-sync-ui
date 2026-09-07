@@ -23,6 +23,7 @@ export const syncAlertQueue1 = syncUI1.makeSyncUI<string, void>(props => (
     modal={false}
     className="dialog--left"
     title={props.data}
+    onClose={() => props.resolve()}
     footer={<Button onClick={() => props.resolve()}>OK</Button>}
   />
 ));
@@ -32,6 +33,7 @@ export const syncAlertQueue2 = syncUI2.makeSyncUI<string, void>(props => (
     modal={false}
     className="dialog--right"
     title={props.data}
+    onClose={() => props.resolve()}
     footer={<Button onClick={() => props.resolve()}>OK</Button>}
   />
 ));

@@ -18,14 +18,17 @@ export const Dialog = (props: {
   footer?: ReactNode;
   className?: string;
   modal?: boolean;
-  /** Escape / native close request. Modal dialogs only. */
-  onCancel?: () => void;
-  /** Click on the ::backdrop, i.e. outside the box. Modal dialogs only. */
-  onBackdropClick?: () => void;
+  /**
+   * The one "the user wants out" hook: it renders the x button in the header
+   * and is what Escape (the native `cancel` event) and a backdrop click call.
+   * Leave it out and the dialog has no close control and ignores both.
+   */
+  onClose?: () => void;
 }) => {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const isModal = props.modal !== false;
+  const onClose = props.onClose;
 
   useEffect(() => {
     const el = ref.current;
@@ -46,15 +49,19 @@ export const Dialog = (props: {
       // resolve/reject unmount it
       onCancel={event => {
         event.preventDefault();
-        props.onCancel?.();
+        onClose?.();
       }}
       // a backdrop click is dispatched at the <dialog> itself; content clicks
       // hit .dialog__box or one of its children
       onClick={event => {
-        if (event.target === ref.current) props.onBackdropClick?.();
+        if (event.target === ref.current) onClose?.();
       }}
     >
-      <div className="dialog__box">
+      <div
+        className={["dialog__box", onClose ? "dialog__box--closable" : null]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <h2 className="dialog__title" id={titleId}>
           {props.title}
         </h2>
@@ -63,6 +70,19 @@ export const Dialog = (props: {
         ) : null}
         {props.footer ? (
           <div className="dialog__footer">{props.footer}</div>
+        ) : null}
+        {/* Painted in the top-right corner, but deliberately the LAST focusable
+            child: `showModal()` focuses the first one, and that has to stay the
+            prompt's autoFocus input / the primary button, not "close". */}
+        {onClose ? (
+          <button
+            type="button"
+            className="close-btn"
+            aria-label="Close"
+            onClick={() => onClose()}
+          >
+            &times;
+          </button>
         ) : null}
       </div>
     </dialog>
